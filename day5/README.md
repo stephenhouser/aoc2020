@@ -14,6 +14,8 @@ Not a lot more complex. Use the same logic to map from passes to seat ids, then 
 the missed number.
 
 
-A good refinement of the `reduce()` and new `map()` functions for patterns.
+- A good refinement of the `reduce()` and new `map()` functions for patterns.
+- using `std::print()` for debugging. Need to move to that for more.
+- did all of this one on iPad ssh-d to linux. new keyboard with `esc` is nice!
 
-Also using `std::print()` for debugging. Need to move to that for more.
+
