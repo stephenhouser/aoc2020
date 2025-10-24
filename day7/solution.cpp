@@ -1,0 +1,78 @@
+#include <chrono>     // high resolution timer
+#include <cstring>    // strtok, strdup
+#include <fstream>    // ifstream (reading file)
+#include <cassert>		// assert macro
+#include <print>
+
+#include <vector>		  // collectin
+#include <string>		  // strings
+#include <ranges>		  // ranges and views
+#include <algorithm>	// sort
+#include <numeric>		// max, reduce, etc.
+
+#include "split.h"    // split strings
+#include "mrf.h"      // map, reduce, filter templates
+
+using namespace std;
+
+/* Update with data type and result types */
+using data_t = vector<string>;
+using result_t = size_t;
+
+/* for pretty printing durations */
+using duration_t = chrono::duration<double, milli>;
+
+/* Read the data file... */
+const data_t read_data(const string &filename) {
+	data_t data;
+
+	std::ifstream ifs(filename);
+
+	string line;
+	while (getline(ifs, line)) {
+		if (!line.empty()) {
+			data.push_back(line);
+		}
+	}
+
+	return data;
+}
+
+/* Part 1 */
+result_t part1(const data_t &data) {
+	return data.size();
+}
+
+result_t part2([[maybe_unused]] const data_t &data) {
+	return 0;
+}
+
+int main(int argc, char *argv[]) {
+	const char *input_file = argv[1];
+	if (argc < 2) {
+		input_file = "test.txt";
+	}
+
+  auto start_time = chrono::high_resolution_clock::now();
+
+	auto data = read_data(input_file);
+
+	auto parse_complete = chrono::high_resolution_clock::now();
+  duration_t parse_time = parse_complete - start_time;
+  print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
+
+	result_t p1_result = part1(data);
+
+	auto p1_complete = chrono::high_resolution_clock::now();
+  duration_t p1_time = p1_complete - parse_complete;
+  print("{:>15} ({:>10.4f}ms)\n", p1_result, p1_time.count());
+
+	result_t p2_result = part2(data);
+
+	auto p2_complete = chrono::high_resolution_clock::now();
+  duration_t p2_time = p2_complete - p1_complete;
+  print("{:>15} ({:>10.4f}ms)\n", p2_result, p2_time.count());
+
+  duration_t total_time = p2_complete - start_time;
+  print("{:>15} ({:>10.4f}ms)\n", "total", total_time.count());
+}
