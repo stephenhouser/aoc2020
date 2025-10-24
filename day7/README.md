@@ -1,3 +1,8 @@
-# Day 0: Template
+# Day 7: Handy Haversacks
 
-Template code and common code for Advent of Code
+## Part 1
+
+## Part 2
+
+- Updated solution.cpp to use std::print instead of cout
+- Updated Makefile, default target is test, live is now "input"
