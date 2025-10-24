@@ -12,6 +12,7 @@
 #include <functional>
 #include <print>
 #include <unordered_map>
+#include <unistd.h>     // getopt
 
 using namespace std;
 
@@ -19,8 +20,8 @@ using group_t = std::vector<std::string>;
 using data_t = std::vector<group_t>;
 using result_t = size_t;
 
-const data_t read_data(const string &filename);
-template <typename T> void print_result(T result, chrono::duration<double, milli> duration);
+/* for pretty printing durations */
+using duration_t = chrono::duration<double, milli>;
 
 /* Reduce vector of U to single T */
 template <typename T, typename R>
@@ -38,6 +39,26 @@ std::vector<R> map(const std::vector<T> &src,
   return dst;
 }
 
+const data_t read_data(const string &filename) {
+	data_t data;
+
+	std::ifstream ifs(filename);
+
+  std::vector<string> group;
+	string line;
+
+	while (getline(ifs, line)) {
+		if (!line.empty()) {
+			group.push_back(line);
+		} else {
+      data.push_back(group);
+      group.clear();
+    }
+	}
+
+  data.push_back(group);
+	return data;
+}
 
 void show_groups(const data_t &groups) {
   for (const auto &group : groups) {
@@ -102,64 +123,52 @@ result_t part2([[maybe_unused]] const data_t &groups) {
   return reduce<result_t, result_t>(answers, 0, std::plus<result_t>());
 }
 
-const data_t read_data(const string &filename) {
-	data_t data;
-
-	std::ifstream ifs(filename);
-
-  std::vector<string> group;
-	string line;
-
-	while (getline(ifs, line)) {
-		if (!line.empty()) {
-			group.push_back(line);
-		} else {
-      data.push_back(group);
-      group.clear();
-    }
-	}
-
-  data.push_back(group);
-	return data;
-}
-
-template <typename T>
-void print_result(T result, chrono::duration<double, milli> duration) {
-	const int time_width = 10;
-	const int time_precision = 4;
-	const int result_width = 15;
-
-	cout << std::setw(result_width) << std::right << result;
-
-	cout << " ("
-		 << std::setw(time_width) << std::fixed << std::right 
-		 << std::setprecision(time_precision)
-		 << duration.count() << "ms)";
-	cout << endl;
-}
-
 int main(int argc, char *argv[]) {
-	const char *input_file = argv[1];
-	if (argc < 2) {
-		input_file = "test.txt";
+	bool verbose = false;
+
+	int c;
+	while ((c = getopt(argc, argv, "v")) != -1) {
+		switch (c) {
+			case 'v':
+				verbose = !verbose;
+				break;
+			default:
+				std::print(stderr, "ERROR: Unknown option \"{}\"\n", c);
+				exit(1);
+		}
 	}
 
-  auto start_time = chrono::high_resolution_clock::now();
+	argc -= optind;
+	argv += optind;
+
+	const char *input_file = argv[0];
+	if (argc != 1) {
+		std::print(stderr, "ERROR: No input file specified\n");
+		exit(2);
+	}
+
+	auto start_time = chrono::high_resolution_clock::now();
 
 	auto data = read_data(input_file);
 
-	auto parse_time = chrono::high_resolution_clock::now();
-	print_result("parse", (parse_time - start_time));
+	auto parse_complete = chrono::high_resolution_clock::now();
+	duration_t parse_time = parse_complete - start_time;
+	if (verbose) {
+		print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
+	}
 
 	result_t p1_result = part1(data);
 
-	auto p1_time = chrono::high_resolution_clock::now();
-	print_result(p1_result, (p1_time - parse_time));
+	auto p1_complete = chrono::high_resolution_clock::now();
+	duration_t p1_time = p1_complete - parse_complete;
+	print("{:>15} ({:>10.4f}ms){}", p1_result, p1_time.count(), verbose ? "\n" : "");
 
 	result_t p2_result = part2(data);
 
-	auto p2_time = chrono::high_resolution_clock::now();
-	print_result(p2_result, (p2_time - p1_time));
+	auto p2_complete = chrono::high_resolution_clock::now();
+	duration_t p2_time = p2_complete - p1_complete;
+	print("{:>15} ({:>10.4f}ms){}", p2_result, p2_time.count(), verbose ? "\n" : "");
 
-	print_result("total", (p2_time - start_time));
+	duration_t total_time = p2_complete - start_time;
+	print("{:>15} ({:>10.4f}ms)\n", "total", total_time.count());
 }

@@ -10,6 +10,8 @@
 #include <ranges>		// ranges and views
 #include <algorithm>	// sort
 #include <numeric>		// max, reduce, etc.
+#include <unistd.h>     // getopt
+#include <print>		// std::print
 
 #include "split.h"
 
@@ -40,13 +42,32 @@ struct rule_t {
 	}
 };
 
+/* for pretty printing durations */
+using duration_t = chrono::duration<double, milli>;
 
 using data_t = vector<pair<rule_t, string>>;
 using result_t = size_t;
 
-const data_t read_data(const string &filename);
-template <typename T> void print_result(T result, chrono::duration<double, milli> duration);
+const data_t read_data(const string &filename) {
+	data_t data;
 
+	std::ifstream ifs(filename);
+
+	string line;
+	while (getline(ifs, line)) {
+		if (!line.empty()) {
+			// 15-16 k: kkkkgkkkkkkkkkkh
+			vector<string> parts = split(line, " -");
+			int min = stoi(parts[0]);
+			int max = stoi(parts[1]);
+			char required_char = parts[2][0];
+			string password = parts[3];
+			data.push_back({{{min, max}, required_char}, password});
+		}
+	}
+
+	return data;
+}
 
 /* Part 1 */
 result_t part1(const data_t &data) {
@@ -79,64 +100,52 @@ result_t part2(const data_t &data) {
 	return valid;
 }
 
-const data_t read_data(const string &filename) {
-	data_t data;
+int main(int argc, char *argv[]) {
+	bool verbose = false;
 
-	std::ifstream ifs(filename);
-
-	string line;
-	while (getline(ifs, line)) {
-		if (!line.empty()) {
-			// 15-16 k: kkkkgkkkkkkkkkkh
-			vector<string> parts = split(line, " -");
-			int min = stoi(parts[0]);
-			int max = stoi(parts[1]);
-			char required_char = parts[2][0];
-			string password = parts[3];
-			data.push_back({{{min, max}, required_char}, password});
+	int c;
+	while ((c = getopt(argc, argv, "v")) != -1) {
+		switch (c) {
+			case 'v':
+				verbose = !verbose;
+				break;
+			default:
+				std::print(stderr, "ERROR: Unknown option \"{}\"\n", c);
+				exit(1);
 		}
 	}
 
-	return data;
-}
+	argc -= optind;
+	argv += optind;
 
-template <typename T>
-void print_result(T result, chrono::duration<double, milli> duration) {
-	const int time_width = 10;
-	const int time_precision = 4;
-	const int result_width = 15;
-
-	cout << std::setw(result_width) << std::right << result;
-
-	cout << " ("
-		 << std::setw(time_width) << std::fixed << std::right 
-		 << std::setprecision(time_precision)
-		 << duration.count() << "ms)";
-	cout << endl;
-}
-
-int main(int argc, char *argv[]) {
-	const char *input_file = argv[1];
-	if (argc < 2) {
-		input_file = "test.txt";
+	const char *input_file = argv[0];
+	if (argc != 1) {
+		std::print(stderr, "ERROR: No input file specified\n");
+		exit(2);
 	}
 
-    auto start_time = chrono::high_resolution_clock::now();
+	auto start_time = chrono::high_resolution_clock::now();
 
 	auto data = read_data(input_file);
 
-	auto parse_time = chrono::high_resolution_clock::now();
-	print_result("parse", (parse_time - start_time));
+	auto parse_complete = chrono::high_resolution_clock::now();
+	duration_t parse_time = parse_complete - start_time;
+	if (verbose) {
+		print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
+	}
 
 	result_t p1_result = part1(data);
 
-	auto p1_time = chrono::high_resolution_clock::now();
-	print_result(p1_result, (p1_time - parse_time));
+	auto p1_complete = chrono::high_resolution_clock::now();
+	duration_t p1_time = p1_complete - parse_complete;
+	print("{:>15} ({:>10.4f}ms){}", p1_result, p1_time.count(), verbose ? "\n" : "");
 
 	result_t p2_result = part2(data);
 
-	auto p2_time = chrono::high_resolution_clock::now();
-	print_result(p2_result, (p2_time - p1_time));
+	auto p2_complete = chrono::high_resolution_clock::now();
+	duration_t p2_time = p2_complete - p1_complete;
+	print("{:>15} ({:>10.4f}ms){}", p2_result, p2_time.count(), verbose ? "\n" : "");
 
-	print_result("total", (p2_time - start_time));
+	duration_t total_time = p2_complete - start_time;
+	print("{:>15} ({:>10.4f}ms)\n", "total", total_time.count());
 }
