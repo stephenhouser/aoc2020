@@ -9,6 +9,7 @@
 #include <ranges>		  // ranges and views
 #include <algorithm>	// sort
 #include <numeric>		// max, reduce, etc.
+#include <getopt.h>   // getopt
 
 #include "split.h"    // split strings
 #include "mrf.h"      // map, reduce, filter templates
@@ -48,10 +49,28 @@ result_t part2([[maybe_unused]] const data_t &data) {
 }
 
 int main(int argc, char *argv[]) {
-	const char *input_file = argv[1];
-	if (argc < 2) {
-		input_file = "test.txt";
-	}
+  bool verbose = false;
+
+  int c;
+  while ((c = getopt(argc, argv, "v")) != -1) {
+    switch (c) {
+      case 'v':
+        verbose = !verbose;
+        break;
+      default:
+        std::print(stderr, "ERROR: Unknown option \"{}\"\n", c);
+        exit(1);
+    }
+  }
+
+  argc -= optind;
+  argv += optind;
+
+	const char *input_file = argv[0];
+  if (argc != 1) {
+    std::print(stderr, "ERROR: No input file specified\n");
+    exit(2);
+  }
 
   auto start_time = chrono::high_resolution_clock::now();
 
@@ -59,19 +78,21 @@ int main(int argc, char *argv[]) {
 
 	auto parse_complete = chrono::high_resolution_clock::now();
   duration_t parse_time = parse_complete - start_time;
-  print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
+  if (verbose) {
+    print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
+  }
 
 	result_t p1_result = part1(data);
 
 	auto p1_complete = chrono::high_resolution_clock::now();
   duration_t p1_time = p1_complete - parse_complete;
-  print("{:>15} ({:>10.4f}ms)\n", p1_result, p1_time.count());
+  print("{:>15} ({:>10.4f}ms){}", p1_result, p1_time.count(), verbose ? "\n" : "");
 
 	result_t p2_result = part2(data);
 
 	auto p2_complete = chrono::high_resolution_clock::now();
   duration_t p2_time = p2_complete - p1_complete;
-  print("{:>15} ({:>10.4f}ms)\n", p2_result, p2_time.count());
+  print("{:>15} ({:>10.4f}ms){}", p2_result, p2_time.count(), verbose ? "\n" : "");
 
   duration_t total_time = p2_complete - start_time;
   print("{:>15} ({:>10.4f}ms)\n", "total", total_time.count());
