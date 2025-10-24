@@ -7,7 +7,6 @@
 
 #include <vector>		// collectin
 #include <string>		// strings
-#include <ranges>		// ranges and views
 #include <algorithm>	// sort
 #include <numeric>		// max, reduce, etc.
 #include <functional>

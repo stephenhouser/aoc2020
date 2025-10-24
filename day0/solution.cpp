@@ -1,37 +1,28 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
+#include <chrono>     // high resolution timer
+#include <cstring>    // strtok, strdup
+#include <fstream>    // ifstream (reading file)
 #include <cassert>		// assert macro
+#include <print>
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
+#include <vector>		  // collectin
+#include <string>		  // strings
+#include <ranges>		  // ranges and views
 #include <algorithm>	// sort
 #include <numeric>		// max, reduce, etc.
 
-#include "split.h"
+#include "split.h"    // split strings
+#include "mrf.h"      // map, reduce, filter templates
 
 using namespace std;
 
+/* Update with data type and result types */
 using data_t = vector<string>;
-using result_t = string;
+using result_t = size_t;
 
-const data_t read_data(const string &filename);
-template <typename T> void print_result(T result, chrono::duration<double, milli> duration);
+/* for pretty printing durations */
+using duration_t = chrono::duration<double, milli>;
 
-
-/* Part 1 */
-const result_t part1([[maybe_unused]] const data_t &data) {
-	test_split();
-	return to_string(data.size());
-}
-
-const result_t part2([[maybe_unused]] const data_t &data) {
-	return to_string(0);
-}
-
+/* Read the data file... */
 const data_t read_data(const string &filename) {
 	data_t data;
 
@@ -47,19 +38,13 @@ const data_t read_data(const string &filename) {
 	return data;
 }
 
-template <typename T>
-void print_result(T result, chrono::duration<double, milli> duration) {
-	const int time_width = 10;
-	const int time_precision = 4;
-	const int result_width = 15;
+/* Part 1 */
+result_t part1(const data_t &data) {
+	return data.size();
+}
 
-	cout << std::setw(result_width) << std::right << result;
-
-	cout << " ("
-		 << std::setw(time_width) << std::fixed << std::right 
-		 << std::setprecision(time_precision)
-		 << duration.count() << "ms)";
-	cout << endl;
+result_t part2([[maybe_unused]] const data_t &data) {
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -68,22 +53,26 @@ int main(int argc, char *argv[]) {
 		input_file = "test.txt";
 	}
 
-    auto start_time = chrono::high_resolution_clock::now();
+  auto start_time = chrono::high_resolution_clock::now();
 
 	auto data = read_data(input_file);
 
-	auto parse_time = chrono::high_resolution_clock::now();
-	print_result("parse", (parse_time - start_time));
+	auto parse_complete = chrono::high_resolution_clock::now();
+  duration_t parse_time = parse_complete - start_time;
+  print("{:>15} ({:>10.4f}ms)\n", "parse", parse_time.count());
 
 	result_t p1_result = part1(data);
 
-	auto p1_time = chrono::high_resolution_clock::now();
-	print_result(p1_result, (p1_time - parse_time));
+	auto p1_complete = chrono::high_resolution_clock::now();
+  duration_t p1_time = p1_complete - parse_complete;
+  print("{:>15} ({:>10.4f}ms)\n", p1_result, p1_time.count());
 
 	result_t p2_result = part2(data);
 
-	auto p2_time = chrono::high_resolution_clock::now();
-	print_result(p2_result, (p2_time - p1_time));
+	auto p2_complete = chrono::high_resolution_clock::now();
+  duration_t p2_time = p2_complete - p1_complete;
+  print("{:>15} ({:>10.4f}ms)\n", p2_result, p2_time.count());
 
-	print_result("total", (p2_time - start_time));
+  duration_t total_time = p2_complete - start_time;
+  print("{:>15} ({:>10.4f}ms)\n", "total", total_time.count());
 }
