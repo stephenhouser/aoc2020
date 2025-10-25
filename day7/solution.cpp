@@ -9,14 +9,13 @@
 #include <print>
 #include <ranges>  // ranges and views
 #include <string>  // strings
-#include <vector>  // collection
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>  // collection
 
 #include "split.h"	// split strings
 
 using namespace std;
-
 
 /* Update with data type and result types */
 using contents_t = vector<pair<size_t, string>>;
@@ -39,8 +38,8 @@ const data_t read_data(const string& filename) {
 			string color = parts[0] + " " + parts[1];
 			contents_t contains;
 
-            if (parts[4] != "no") {
-                for (size_t pos = 4; parts.size() >= pos + 4; pos += 4) {
+			if (parts[4] != "no") {
+				for (size_t pos = 4; parts.size() >= pos + 4; pos += 4) {
 					size_t count_1 = stoul(parts[pos]);
 					string color_1 = parts[pos + 1] + " " + parts[pos + 2];
 					contains.push_back({count_1, color_1});
@@ -69,22 +68,22 @@ void print_rules(const data_t& rules) {
  * bag color -> bag colors that can contain it.
  *              the number is the number of bags that can be contained.
  */
-data_t invert_rules(const data_t &rules) {
-    data_t irules;
+data_t invert_rules(const data_t& rules) {
+	data_t irules;
 
 	for (const auto& [color, contents] : rules) {
-        // ensure all colors exist in the inverted rules
-        if (!irules.contains(color)) {
-            irules[color] = {};
-        }
+		// ensure all colors exist in the inverted rules
+		if (!irules.contains(color)) {
+			irules[color] = {};
+		}
 
 		for (const auto& bag : contents) {
-            auto bag_color = bag.second;
-            irules[bag_color].push_back({bag.first, color});
+			auto bag_color = bag.second;
+			irules[bag_color].push_back({bag.first, color});
 		}
 	}
 
-    return irules;
+	return irules;
 }
 
 /* Return bag colors that can contain the start color bag with the given rules.
@@ -112,14 +111,14 @@ result_t part1(const data_t& rules) {
 /* Return the number of bags the start bag must contain.
  * Recursively descend through the rules counting bags, for part 2
  */
-result_t contains_bags(const data_t &rules, const string &start) {
-    result_t contains = 0;
+result_t contains_bags(const data_t& rules, const string& start) {
+	result_t contains = 0;
 
-    for (const auto &[number, color] : rules.at(start)) {
-        contains += number + (number * contains_bags(rules, color));
-    }
+	for (const auto& [number, color] : rules.at(start)) {
+		contains += number + (number * contains_bags(rules, color));
+	}
 
-    return contains;
+	return contains;
 }
 
 result_t part2(const data_t& rules) {

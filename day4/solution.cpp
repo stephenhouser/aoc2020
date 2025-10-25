@@ -1,20 +1,20 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <cassert>		// assert macro
+#include <unistd.h>	 // getopt
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
-#include <algorithm>	// sort
-#include <numeric>		// max, reduce, etc.
-#include <unordered_map>
+#include <algorithm>  // sort
+#include <cassert>	  // assert macro
+#include <chrono>	  // high resolution timer
+#include <cstring>	  // strtok, strdup
+#include <fstream>	  // ifstream (reading file)
 #include <functional>
+#include <iomanip>	 // setw and setprecision on output
+#include <iostream>	 // cout
+#include <numeric>	 // max, reduce, etc.
+#include <print>	 // std::print
+#include <ranges>	 // ranges and views
 #include <regex>
-#include <unistd.h>     // getopt
-#include <print>		// std::print
+#include <string>  // strings
+#include <unordered_map>
+#include <vector>  // collectin
 
 #include "split.h"
 
@@ -23,22 +23,15 @@ using namespace std;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-
 struct passport_t {
 	std::unordered_map<std::string, std::string> fields = {};
 
 	bool validate_fields() const {
-		bool required_fields = fields.find("byr") != fields.end() 
-				&& fields.find("iyr") != fields.end() 
-				&& fields.find("eyr") != fields.end()
-				&& fields.find("hgt") != fields.end()
-				&& fields.find("hcl") != fields.end() 
-				&& fields.find("ecl") != fields.end()
-				&& fields.find("pid") != fields.end();
+		bool required_fields = fields.find("byr") != fields.end() && fields.find("iyr") != fields.end() && fields.find("eyr") != fields.end() && fields.find("hgt") != fields.end() && fields.find("hcl") != fields.end() && fields.find("ecl") != fields.end() && fields.find("pid") != fields.end();
 		return required_fields && (fields.size() == 7 || (fields.contains("cid") && fields.size() == 8));
 	}
 
-	bool validate_number(const string &field_name, size_t digits = 0) const {
+	bool validate_number(const string& field_name, size_t digits = 0) const {
 		auto field = fields.find(field_name);
 		if (field != fields.end()) {
 			std::regex rx("^[0-9]*$");
@@ -55,7 +48,7 @@ struct passport_t {
 		return false;
 	}
 
-	bool validate_hex(const string &field_name) const {
+	bool validate_hex(const string& field_name) const {
 		auto field = fields.find(field_name);
 		if (field != fields.end() && field->second.size() == 7) {
 			std::regex rx("^#[0-9a-f]{6}$");
@@ -68,7 +61,7 @@ struct passport_t {
 		return false;
 	}
 
-	bool validate_year(const string &field_name, int min_value, int max_value) const {
+	bool validate_year(const string& field_name, int min_value, int max_value) const {
 		auto field = fields.find(field_name);
 		if (field != fields.end() && field->second.size() == 4) {
 			int value = stoi(field->second.c_str());
@@ -80,7 +73,7 @@ struct passport_t {
 		return false;
 	}
 
-	bool validate_string(const string &field_name, const vector<string> &allowed) const {
+	bool validate_string(const string& field_name, const vector<string>& allowed) const {
 		auto field = fields.find(field_name);
 		if (field != fields.end() && field->second.size() == 3) {
 			string value = field->second.c_str();
@@ -90,7 +83,7 @@ struct passport_t {
 		return false;
 	}
 
-	bool validate_height(const string &field_name) const {
+	bool validate_height(const string& field_name) const {
 		auto field = fields.find(field_name);
 		if (field != fields.end()) {
 			std::regex rx("^([0-9]+)(cm|in)$");
@@ -110,14 +103,7 @@ struct passport_t {
 	}
 
 	bool validate() const {
-		return validate_fields()
-			&& validate_year("byr", 1920, 2002)
-			&& validate_year("iyr", 2010, 2020)
-			&& validate_year("eyr", 2020, 2030)
-			&& validate_height("hgt")
-			&& validate_hex("hcl")
-			&& validate_string("ecl", {"amb", "blu", "brn", "gry", "grn", "hzl", "oth"})
-			&& validate_number("pid", 9);
+		return validate_fields() && validate_year("byr", 1920, 2002) && validate_year("iyr", 2010, 2020) && validate_year("eyr", 2020, 2030) && validate_height("hgt") && validate_hex("hcl") && validate_string("ecl", {"amb", "blu", "brn", "gry", "grn", "hzl", "oth"}) && validate_number("pid", 9);
 	}
 };
 
@@ -138,7 +124,7 @@ T reduce(const std::vector<U> vec, const T start, std::function<T(T, U)> func) {
 	return std::accumulate(vec.begin(), vec.end(), start, func);
 }
 
-const data_t read_data(const string &filename) {
+const data_t read_data(const string& filename) {
 	data_t data;
 
 	std::ifstream ifs(filename);
@@ -162,7 +148,7 @@ const data_t read_data(const string &filename) {
 }
 
 /* Part 1 */
-result_t part1(const data_t &data) {
+result_t part1(const data_t& data) {
 	size_t valid = reduce<size_t, passport_t>(data, (size_t)0, [](size_t a, const passport_t& b) {
 		return a + (b.validate_fields() ? 1 : 0);
 	});
@@ -171,7 +157,7 @@ result_t part1(const data_t &data) {
 }
 
 // 117 too high
-result_t part2([[maybe_unused]] const data_t &data) {
+result_t part2([[maybe_unused]] const data_t& data) {
 	// for (auto &passport : data) {
 	// 	cout << (passport.validate() ? "* " : "x ");
 	// 	for (const auto& [key, value] : passport.fields) {
@@ -187,7 +173,7 @@ result_t part2([[maybe_unused]] const data_t &data) {
 	return valid;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	bool verbose = false;
 
 	int c;
@@ -205,7 +191,7 @@ int main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	const char *input_file = argv[0];
+	const char* input_file = argv[0];
 	if (argc != 1) {
 		std::print(stderr, "ERROR: No input file specified\n");
 		exit(2);

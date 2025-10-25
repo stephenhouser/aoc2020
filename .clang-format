@@ -1,0 +1,16 @@
+BasedOnStyle: Google
+# AccessModifierOffset: 4
+IndentAccessModifiers: false
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: Always
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+IndentCaseLabels: true
+IndentCaseBlocks: true
+ColumnLimit: 0
+FixNamespaceComments: true

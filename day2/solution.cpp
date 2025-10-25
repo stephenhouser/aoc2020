@@ -1,17 +1,17 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <cassert>		// assert macro
+#include <unistd.h>	 // getopt
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
-#include <algorithm>	// sort
-#include <numeric>		// max, reduce, etc.
-#include <unistd.h>     // getopt
-#include <print>		// std::print
+#include <algorithm>  // sort
+#include <cassert>	  // assert macro
+#include <chrono>	  // high resolution timer
+#include <cstring>	  // strtok, strdup
+#include <fstream>	  // ifstream (reading file)
+#include <iomanip>	  // setw and setprecision on output
+#include <iostream>	  // cout
+#include <numeric>	  // max, reduce, etc.
+#include <print>	  // std::print
+#include <ranges>	  // ranges and views
+#include <string>	  // strings
+#include <vector>	  // collectin
 
 #include "split.h"
 
@@ -21,7 +21,7 @@ struct rule_t {
 	std::pair<int, int> range;
 	char required_char;
 
-	bool range_validate(const string &password) {
+	bool range_validate(const string& password) {
 		int matches = 0;
 		for (auto c : password) {
 			if (c == required_char) {
@@ -32,11 +32,10 @@ struct rule_t {
 		return range.first <= matches && matches <= range.second;
 	}
 
-	bool position_validate(const string &password) {
+	bool position_validate(const string& password) {
 		assert(range.first >= 1 && range.second >= 1);
-		
-		int matches = ((required_char == password[(size_t)range.first-1]) ? 1 : 0)
-					+ ((required_char == password[(size_t)range.second-1]) ? 1 : 0);
+
+		int matches = ((required_char == password[(size_t)range.first - 1]) ? 1 : 0) + ((required_char == password[(size_t)range.second - 1]) ? 1 : 0);
 
 		return matches == 1;
 	}
@@ -48,7 +47,7 @@ using duration_t = chrono::duration<double, milli>;
 using data_t = vector<pair<rule_t, string>>;
 using result_t = size_t;
 
-const data_t read_data(const string &filename) {
+const data_t read_data(const string& filename) {
 	data_t data;
 
 	std::ifstream ifs(filename);
@@ -70,10 +69,9 @@ const data_t read_data(const string &filename) {
 }
 
 /* Part 1 */
-result_t part1(const data_t &data) {
-	
+result_t part1(const data_t& data) {
 	result_t valid = 0;
-	for (const auto &check : data) {
+	for (const auto& check : data) {
 		auto rule = check.first;
 		auto password = check.second;
 		if (rule.range_validate(password)) {
@@ -87,9 +85,9 @@ result_t part1(const data_t &data) {
 // 413 too high
 // 400 too high
 // 251 correct -- you need to read the rules better next time
-result_t part2(const data_t &data) {
+result_t part2(const data_t& data) {
 	result_t valid = 0;
-	for (const auto &check : data) {
+	for (const auto& check : data) {
 		auto rule = check.first;
 		auto password = check.second;
 		if (rule.position_validate(password)) {
@@ -100,7 +98,7 @@ result_t part2(const data_t &data) {
 	return valid;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	bool verbose = false;
 
 	int c;
@@ -118,7 +116,7 @@ int main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	const char *input_file = argv[0];
+	const char* input_file = argv[0];
 	if (argc != 1) {
 		std::print(stderr, "ERROR: No input file specified\n");
 		exit(2);

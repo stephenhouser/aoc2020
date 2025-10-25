@@ -1,15 +1,16 @@
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <sstream>		// std::ostringstream
-#include <algorithm>
-#include <string.h>
-
 #include "charmap.h"
 
-// static const char *highlight_chars = "^>v<";
-static const char *highlight_chars = "";
+#include <string.h>
 
-std::ostream& operator<<(std::ostream& os, const charmap_t &map) {
+#include <algorithm>
+#include <iomanip>	 // setw and setprecision on output
+#include <iostream>	 // cout
+#include <sstream>	 // std::ostringstream
+
+// static const char *highlight_chars = "^>v<";
+static const char* highlight_chars = "";
+
+std::ostream& operator<<(std::ostream& os, const charmap_t& map) {
 	std::ostringstream buffer;
 
 	os << "   ";
@@ -54,5 +55,3 @@ std::ostream& operator<<(std::ostream& os, const charmap_t &map) {
 
 	return os;
 }
-
-

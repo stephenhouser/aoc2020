@@ -1,18 +1,18 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <cassert>		// assert macro
+#include <unistd.h>	 // getopt
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
-#include <algorithm>	// sort
-#include <numeric>		// max, reduce, etc.
+#include <algorithm>  // sort
+#include <cassert>	  // assert macro
+#include <chrono>	  // high resolution timer
+#include <cstring>	  // strtok, strdup
+#include <fstream>	  // ifstream (reading file)
 #include <functional>
+#include <iomanip>	 // setw and setprecision on output
+#include <iostream>	 // cout
+#include <numeric>	 // max, reduce, etc.
 #include <print>
-#include <unistd.h>     // getopt
+#include <ranges>  // ranges and views
+#include <string>  // strings
+#include <vector>  // collectin
 
 #include "split.h"
 
@@ -32,22 +32,22 @@ R reduce(const std::vector<T> vec, const R start, std::function<R(T, R)> func) {
 
 /* Map vector of S to vector of D */
 template <typename T, typename R>
-std::vector<R> map(const std::vector<T> &src,
-                   const std::function<R(const T &)> func) {
-  std::vector<R> dst;
-  dst.reserve(src.size());
+std::vector<R> map(const std::vector<T>& src,
+				   const std::function<R(const T&)> func) {
+	std::vector<R> dst;
+	dst.reserve(src.size());
 
-  // this seems slightly faster than the loop below.
-  std::transform(src.begin(), src.end(), std::back_inserter(dst), func);
+	// this seems slightly faster than the loop below.
+	std::transform(src.begin(), src.end(), std::back_inserter(dst), func);
 
-  //for (const auto &e : src) {
-  //  dst.emplace_back(func(e));
-  //}
+	// for (const auto &e : src) {
+	//   dst.emplace_back(func(e));
+	// }
 
-  return dst;
+	return dst;
 }
 
-const data_t read_data(const string &filename) {
+const data_t read_data(const string& filename) {
 	data_t data;
 
 	std::ifstream ifs(filename);
@@ -63,69 +63,69 @@ const data_t read_data(const string &filename) {
 }
 
 /* Part 1 */
-result_t decode_pass(const string &pass) {
-  result_t row_min = 0;
-  result_t row_max = 127;
-  result_t col_min = 0;
-  result_t col_max = 7;
+result_t decode_pass(const string& pass) {
+	result_t row_min = 0;
+	result_t row_max = 127;
+	result_t col_min = 0;
+	result_t col_max = 7;
 
-  char last_row = 0;
-  char last_col = 0;
+	char last_row = 0;
+	char last_col = 0;
 
-  for (const char ch : pass) {
-    switch (ch) {
-      case 'F':
-        row_max -= ((row_max - row_min) >> 1) + 1;
-        last_row = ch;
-        break;
-      case 'B':
-        row_min += ((row_max - row_min) >> 1) + 1;
-        last_row = ch;
-        break;
-      case 'L':
-        col_max -= ((col_max - col_min) >> 1) + 1;
-        last_col = ch;   
-        break;
-      case 'R':
-        col_min += ((col_max - col_min) >> 1) + 1;
-        last_col = ch;
-        break;
-    }
-  }
+	for (const char ch : pass) {
+		switch (ch) {
+			case 'F':
+				row_max -= ((row_max - row_min) >> 1) + 1;
+				last_row = ch;
+				break;
+			case 'B':
+				row_min += ((row_max - row_min) >> 1) + 1;
+				last_row = ch;
+				break;
+			case 'L':
+				col_max -= ((col_max - col_min) >> 1) + 1;
+				last_col = ch;
+				break;
+			case 'R':
+				col_min += ((col_max - col_min) >> 1) + 1;
+				last_col = ch;
+				break;
+		}
+	}
 
-  result_t row = (last_row == 'F') ? row_min : row_max;
-  result_t col = (last_col == 'L') ? col_min : col_max;
-  return (row * 8) + col;
+	result_t row = (last_row == 'F') ? row_min : row_max;
+	result_t col = (last_col == 'L') ? col_min : col_max;
+	return (row * 8) + col;
 }
 
-result_t part1(const data_t &passes) {
-  /* map passes to seat ids */
-  auto seats = map<string, result_t>(passes, decode_pass);
+result_t part1(const data_t& passes) {
+	/* map passes to seat ids */
+	auto seats = map<string, result_t>(passes, decode_pass);
 
-  /* find the largest one */
-  auto largest_seat = *std::max_element(seats.begin(), seats.end());
+	/* find the largest one */
+	auto largest_seat = *std::max_element(seats.begin(), seats.end());
 
 	return largest_seat;
 }
 
-result_t part2([[maybe_unused]] const data_t &passes) {
-  /* map passes to seat ids */
-  auto seats = map<string, result_t>(passes, decode_pass);
+result_t part2([[maybe_unused]] const data_t& passes) {
+	/* map passes to seat ids */
+	auto seats = map<string, result_t>(passes, decode_pass);
 
-  /* sort the seats */
-  std::sort(seats.begin(), seats.end(), std::less<result_t>());
+	/* sort the seats */
+	std::sort(seats.begin(), seats.end(), std::less<result_t>());
 
-  /* loop looking for first gap in numbers */
-  result_t pos = 1;
-  while (seats[pos] == seats[pos - 1] + 1) {
-    pos++;
-  }
+	/* loop looking for first gap in numbers */
+	result_t pos = 1;
+	while (seats[pos] == seats[pos - 1] + 1) {
+		pos++;
+	}
 
-  /* our seat number is the number past the gap - 1 */
+	/* our seat number is the number past the gap - 1 */
 	return seats[pos] - 1;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	bool verbose = false;
 
 	int c;
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	const char *input_file = argv[0];
+	const char* input_file = argv[0];
 	if (argc != 1) {
 		std::print(stderr, "ERROR: No input file specified\n");
 		exit(2);

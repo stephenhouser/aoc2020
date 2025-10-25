@@ -1,17 +1,17 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <cassert>		// assert macro
+#include <unistd.h>	 // getopt
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
-#include <algorithm>	// sort
-#include <numeric>		// max, reduce, etc.
-#include <unistd.h>     // getopt
-#include <print>		// std::print
+#include <algorithm>  // sort
+#include <cassert>	  // assert macro
+#include <chrono>	  // high resolution timer
+#include <cstring>	  // strtok, strdup
+#include <fstream>	  // ifstream (reading file)
+#include <iomanip>	  // setw and setprecision on output
+#include <iostream>	  // cout
+#include <numeric>	  // max, reduce, etc.
+#include <print>	  // std::print
+#include <ranges>	  // ranges and views
+#include <string>	  // strings
+#include <vector>	  // collectin
 
 #include "split.h"
 
@@ -23,7 +23,7 @@ using result_t = size_t;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-const data_t read_data(const string &filename) {
+const data_t read_data(const string& filename) {
 	data_t data;
 
 	std::ifstream ifs(filename);
@@ -39,7 +39,7 @@ const data_t read_data(const string &filename) {
 }
 
 /* Part 1 */
-result_t part1([[maybe_unused]] const data_t &data) {
+result_t part1([[maybe_unused]] const data_t& data) {
 	auto numbers = data;
 	std::sort(numbers.begin(), numbers.end());
 
@@ -55,7 +55,7 @@ result_t part1([[maybe_unused]] const data_t &data) {
 	return 0;
 }
 
-result_t part2([[maybe_unused]] const data_t &data) {
+result_t part2([[maybe_unused]] const data_t& data) {
 	auto numbers = data;
 	std::sort(numbers.begin(), numbers.end());
 
@@ -73,7 +73,7 @@ result_t part2([[maybe_unused]] const data_t &data) {
 	return 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	bool verbose = false;
 
 	int c;
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	const char *input_file = argv[0];
+	const char* input_file = argv[0];
 	if (argc != 1) {
 		std::print(stderr, "ERROR: No input file specified\n");
 		exit(2);

@@ -1,11 +1,11 @@
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <sstream>		// std::ostringstream
-#include <string>		// std::string
-
 #include "point.h"
 
-std::ostream& operator<<(std::ostream& os, const point_t &p) {
+#include <iomanip>	 // setw and setprecision on output
+#include <iostream>	 // cout
+#include <sstream>	 // std::ostringstream
+#include <string>	 // std::string
+
+std::ostream& operator<<(std::ostream& os, const point_t& p) {
 	std::ostringstream buffer;
 	os << "(" << p.x << "," << p.y;
 	if (p.z) {
@@ -15,14 +15,14 @@ std::ostream& operator<<(std::ostream& os, const point_t &p) {
 	return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<point_t> &v) {
-	for (auto &p : v) {
+std::ostream& operator<<(std::ostream& os, const std::vector<point_t>& v) {
+	for (auto& p : v) {
 		os << p << " ";
 	}
 	return os;
 }
 
-std::istream& operator>>(std::istream& is, point_t &p) {
+std::istream& operator>>(std::istream& is, point_t& p) {
 	char delim;
 	if (is >> p.x >> delim >> p.y) {
 		if (is.get() == delim) {
@@ -30,14 +30,14 @@ std::istream& operator>>(std::istream& is, point_t &p) {
 		}
 	}
 
-    return is;
+	return is;
 }
 
 /* Read points, one per line from istream until end of file or empty line.
  * optionally, call callback function to modify point before being emplaced.
  * gets copy of the line/string used to create the point for use.
  */
-std::vector<point_t> read_points(std::istream& is, void (*fn)(point_t &point, const std::string &line)) {
+std::vector<point_t> read_points(std::istream& is, void (*fn)(point_t& point, const std::string& line)) {
 	std::vector<point_t> points;
 
 	std::string line;

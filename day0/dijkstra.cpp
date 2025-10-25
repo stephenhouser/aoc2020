@@ -1,11 +1,13 @@
 
-#include <vector>
-#include <queue>
+#include "dijkstra.h"
+
 #include <limits.h>
 
-#include "point.h"
+#include <queue>
+#include <vector>
+
 #include "charmap.h"
-#include "dijkstra.h"
+#include "point.h"
 
 /* *** Dijkstra *** */
 
@@ -21,17 +23,17 @@ static std::vector<point_t> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
 
 // used to keep Q in cost (reverse) order. this one works :-)
 class compare_cost {
-	public:
-		bool operator() (vector_t &a, vector_t &b) {
-			return b.p.z < a.p.z;
-		}
+   public:
+	bool operator()(vector_t& a, vector_t& b) {
+		return b.p.z < a.p.z;
+	}
 };
 
 // The cost to go from current to neighbor
-static size_t default_cost(const size_t cost, 
-				[[maybe_unused]] const vector_t &current, 
-				[[maybe_unused]] const vector_t &neighbor, 
-				[[maybe_unused]] const charmap_t &map) {
+static size_t default_cost(const size_t cost,
+						   [[maybe_unused]] const vector_t& current,
+						   [[maybe_unused]] const vector_t& neighbor,
+						   [[maybe_unused]] const charmap_t& map) {
 	// return = current.p.z + 1; // ((direction == u.dir) ? 1 : 1001);
 	return cost + ((size_t)map.get(neighbor.p) - (size_t)'0');
 }
@@ -43,11 +45,11 @@ static size_t default_cost(const size_t cost,
 
 // Returns, min_cost, dist[], pred[]
 std::tuple<size_t, dist_t, pred_t>
-dijkstra(const charmap_t &map,
-		 const vector_t &start,
-		 const point_t &end,
-		 size_t (*cost_fn)(const size_t cost, const vector_t &current, 
-							const vector_t &neighbor, const charmap_t &map)) {
+dijkstra(const charmap_t& map,
+		 const vector_t& start,
+		 const point_t& end,
+		 size_t (*cost_fn)(const size_t cost, const vector_t& current,
+						   const vector_t& neighbor, const charmap_t& map)) {
 	dist_t dist;
 	pred_t pred;
 	std::priority_queue<vector_t, std::vector<vector_t>, compare_cost> Q;
@@ -66,7 +68,7 @@ dijkstra(const charmap_t &map,
 		Q.pop();
 
 		size_t cost = static_cast<size_t>(u.p.z);
-		u.p.z = 0; // clear so we can insert into map properly
+		u.p.z = 0;	// clear so we can insert into map properly
 
 		// test if this node is the/an end node
 		if (u.p == end) {
@@ -75,7 +77,7 @@ dijkstra(const charmap_t &map,
 
 		// for each neighbor v of u in Q
 		for (auto direction : directions) {
-			vector_t v(u.p+direction, direction);
+			vector_t v(u.p + direction, direction);
 
 			size_t neighbor_cost = cost_fn(cost, u, v, map);
 
@@ -102,7 +104,7 @@ dijkstra(const charmap_t &map,
 }
 
 /* Return the distance of point p from the start using the precomputed dist[]. */
-size_t dijkstra_distance(const charmap_t &map, const dist_t &dist, const point_t &p) {
+size_t dijkstra_distance(const charmap_t& map, const dist_t& dist, const point_t& p) {
 	if (map.is_char(p.x, p.y, 'S')) {
 		return 0;
 	}
@@ -118,13 +120,12 @@ size_t dijkstra_distance(const charmap_t &map, const dist_t &dist, const point_t
 				distance = d;
 			}
 		}
-
 	}
 	return distance;
 }
 
 /* Return the path from start to end using precomputed pred. */
-std::vector<point_t> dijkstra_path(const point_t &end, const pred_t &pred) {
+std::vector<point_t> dijkstra_path(const point_t& end, const pred_t& pred) {
 	std::vector<point_t> path;
 	std::queue<vector_t> Q;
 
@@ -138,7 +139,6 @@ std::vector<point_t> dijkstra_path(const point_t &end, const pred_t &pred) {
 		auto vertex = Q.front();
 		Q.pop();
 
-
 		if (!path.size() || path.back() != vertex.p) {
 			path.push_back(vertex.p);
 		}
@@ -146,7 +146,7 @@ std::vector<point_t> dijkstra_path(const point_t &end, const pred_t &pred) {
 		auto pit = pred.find(vertex);
 		if (pit != pred.end()) {
 			std::vector<vector_t> p = pit->second;
-			for (const auto &predecessor : p) {
+			for (const auto& predecessor : p) {
 				Q.push(predecessor);
 			}
 		}
@@ -155,7 +155,7 @@ std::vector<point_t> dijkstra_path(const point_t &end, const pred_t &pred) {
 	return path;
 }
 
-void show_dijkstra_distances(const charmap_t &map, const dist_t &dist) {
+void show_dijkstra_distances(const charmap_t& map, const dist_t& dist) {
 	int x_width = 4;
 
 	std::cout << "   ";
@@ -169,7 +169,6 @@ void show_dijkstra_distances(const charmap_t &map, const dist_t &dist) {
 		std::cout << "---";
 	}
 	std::cout << "-+-\n";
-
 
 	size_t y = 0;
 	for (auto yit = map.data.begin(); yit != map.data.end(); ++yit) {

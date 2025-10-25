@@ -44,7 +44,7 @@ std::vector<R> map(const std::vector<T>& src,
  *	auto seats = map<string, size_t>(passes, decode_pass);
  */
 
- /* filter vector to a new vector for all that match func. */
+/* filter vector to a new vector for all that match func. */
 template <typename T>
 std::vector<T> filter(const std::vector<T> src,
 					  const std::function<bool(const T&)> func) {

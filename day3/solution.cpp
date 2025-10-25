@@ -1,17 +1,17 @@
-#include <chrono>       // high resolution timer
-#include <cstring>      // strtok, strdup
-#include <fstream>      // ifstream (reading file)
-#include <iostream>		// cout
-#include <iomanip>		// setw and setprecision on output
-#include <cassert>		// assert macro
+#include <unistd.h>	 // getopt
 
-#include <vector>		// collectin
-#include <string>		// strings
-#include <ranges>		// ranges and views
-#include <algorithm>	// sort
-#include <numeric>		// max, reduce, etc.
-#include <unistd.h>     // getopt
-#include <print>		// std::print
+#include <algorithm>  // sort
+#include <cassert>	  // assert macro
+#include <chrono>	  // high resolution timer
+#include <cstring>	  // strtok, strdup
+#include <fstream>	  // ifstream (reading file)
+#include <iomanip>	  // setw and setprecision on output
+#include <iostream>	  // cout
+#include <numeric>	  // max, reduce, etc.
+#include <print>	  // std::print
+#include <ranges>	  // ranges and views
+#include <string>	  // strings
+#include <vector>	  // collectin
 
 #include "charmap.h"
 
@@ -23,11 +23,11 @@ using result_t = size_t;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-const data_t read_data(const string &filename) {
+const data_t read_data(const string& filename) {
 	return charmap_t::from_file(filename);
 }
 
-result_t run_trail(const data_t &map, const point_t &move) {
+result_t run_trail(const data_t& map, const point_t& move) {
 	size_t trees = 0;
 	point_t pos = {0, 0};
 	while (pos.y < map.size_y) {
@@ -42,10 +42,10 @@ result_t run_trail(const data_t &map, const point_t &move) {
 	return trees;
 }
 
-vector<result_t> run_trails(const data_t &map, const vector<point_t> &moves) {
+vector<result_t> run_trails(const data_t& map, const vector<point_t>& moves) {
 	vector<result_t> trees;
 
-	for (const auto &move : moves) {
+	for (const auto& move : moves) {
 		trees.push_back(run_trail(map, move));
 	}
 
@@ -53,16 +53,16 @@ vector<result_t> run_trails(const data_t &map, const vector<point_t> &moves) {
 }
 
 template <typename T>
-T reduce(std::vector<T> vec, const T &start, std::function<T(T, T)> func) {
+T reduce(std::vector<T> vec, const T& start, std::function<T(T, T)> func) {
 	return std::accumulate(vec.begin(), vec.end(), start, func);
 }
 
 /* Part 1 */
-result_t part1(const data_t &map) {
+result_t part1(const data_t& map) {
 	return run_trail(map, {3, 1});
 }
 
-result_t part2(const data_t &map) {
+result_t part2(const data_t& map) {
 	const vector<point_t> moves = {{1, 1}, {3, 1}, {5, 1}, {7, 1}, {1, 2}};
 	const vector<size_t> path_trees = run_trails(map, moves);
 
@@ -70,8 +70,7 @@ result_t part2(const data_t &map) {
 	return trees;
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	bool verbose = false;
 
 	int c;
@@ -89,7 +88,7 @@ int main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	const char *input_file = argv[0];
+	const char* input_file = argv[0];
 	if (argc != 1) {
 		std::print(stderr, "ERROR: No input file specified\n");
 		exit(2);
