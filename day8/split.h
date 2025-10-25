@@ -1,9 +1,10 @@
 #if !defined(SPLIT_H)
 #define SPLIT_H
 
-#include <cstring>	// strtok, strdup
-#include <string>	// std::string
-#include <vector>	// std::vector
+#include <cstring>	 // strtok, strdup
+#include <iostream>	 // cout
+#include <string>	 // std::string
+#include <vector>	 // std::vector
 
 extern std::vector<std::string> split(const std::string& str, const std::string& delims = ", =;");
 extern std::vector<int> split_int(const std::string& str, const std::string& delims = ", =;");

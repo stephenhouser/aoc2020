@@ -1,8 +1,7 @@
+
 #include "split.h"
 
-#include <cstring>	 // strtok, strdup
 #include <fstream>	 // ifstream (reading file)
-#include <iostream>	 // cout
 #include <ranges>
 
 using namespace std;
