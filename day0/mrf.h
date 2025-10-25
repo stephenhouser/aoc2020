@@ -43,3 +43,19 @@ std::vector<R> map(const std::vector<T>& src,
  *
  *	auto seats = map<string, size_t>(passes, decode_pass);
  */
+
+ /* filter vector to a new vector for all that match func. */
+template <typename T>
+std::vector<T> filter(const std::vector<T> src,
+					  const std::function<bool(const T&)> func) {
+	std::vector<T> filtered;
+	std::copy_if(src.begin(), src.end(), std::back_inserter(filtered), func);
+	return filtered;
+}
+
+/* Example using filter()
+ *
+ *	auto possible = filter<instruction_t>(program, [](const instruction_t &instr) {
+ *		return instr.op != "acc";
+ *	});
+ */

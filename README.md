@@ -9,7 +9,7 @@
 | 5  | ⭐ | 🌟 | [Day 5: Binary Boarding](https://adventofcode.com/2020/day/5) |
 | 6  | ⭐ | 🌟 | [Day 6: Custom Customs](https://adventofcode.com/2020/day/6) |
 | 7  | ⭐ | 🌟 | [Day 7: Handy Haversacks](https://adventofcode.com/2020/day/7) |
-| 8  |    |    | [Day 8: Handheld Halting](https://adventofcode.com/2020/day/8)   |
+| 8  | ⭐ | 🌟 | [Day 8: Handheld Halting](https://adventofcode.com/2020/day/8)   |
 | 9  |    |    |    |
 | 10 |    |    |    |
 | 11 |    |    |    |
