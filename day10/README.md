@@ -8,3 +8,5 @@ with our laptop being 3 jolts above the highest rated adapter.
 
 ## Part 2
 
+Count the number of distinct ways we can arrange the adapters to connect
+the charging outlet to our device. recursion?
