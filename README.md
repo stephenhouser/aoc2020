@@ -11,9 +11,9 @@
 | 7  | ⭐ | 🌟 | [Day 7: Handy Haversacks](https://adventofcode.com/2020/day/7) |
 | 8  | ⭐ | 🌟 | [Day 8: Handheld Halting](https://adventofcode.com/2020/day/8)   |
 | 9  | ⭐ | 🌟 | [Day 9: Encoding Error](https://adventofcode.com/2020/day/9) |
-| 10 |    |    |    |
-| 11 |    |    |    |
-| 12 |    |    |    |
+| 10 | ⭐ | 🌟 | [Day 10: Adapter Array](https://adventofcode.com/2020/day/10) |
+| 11 | ⭐ | 🌟 | [Day 11: Seating System](https://adventofcode.com/2020/day/11) |
+| 12 | ⭐ | 🌟 | [Day 12: Rain Risk](https://adventofcode.com/2020/day/12) |
 | 13 |    |    |    |
 | 14 |    |    |    |
 | 15 |    |    |    |
