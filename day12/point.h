@@ -7,6 +7,7 @@
 #include <string>	 // std::string
 #include <tuple>
 #include <vector>
+#include <cassert>
 
 using dimension_t = long;
 using value_t = long;
@@ -15,6 +16,8 @@ struct point_t {
 	dimension_t x = 0;
 	dimension_t y = 0;
 	dimension_t z = 0;
+
+	bool feature_z_sort = false;	// true=sort by z,y,x, false=x,y,z
 
 	// value_t u = 0;
 	// value_t v = 0;
@@ -57,19 +60,47 @@ struct point_t {
 		}
 	}
 
+	/* Rotate point left (counter-clockwise) around origin in increments of 90-degrees 
+	 * Currently only tested with 90, 180, and 270 degrees (e.g. charmap_t things)
+	 */
+	void rotate_left(dimension_t angle) {
+		// only works with 90 degree increments
+		assert(angle == 90 || angle == 180 || angle == 270);
+
+		auto next_x = x;
+		auto next_y = y;
+		while (angle > 0) {
+			auto temp = next_x;
+			next_x = -next_y;
+			next_y = temp;
+			angle -= 90;
+		}
+
+		this->x = next_x;
+		this->y = next_y;
+	}
+
+	/* Rotate point right (clockwise) around origin in increments of 90-degrees
+	 */
+	void rotate_right(dimension_t angle) {
+		this->rotate_left(360 - angle);
+	}
+
 	bool operator<(const point_t& rhs) const {
-		// // sorts by z, then y, then x
-		// if (z == rhs.z) {
-		// 	if (y == rhs.y) {
-		// 		return x < rhs.x;
-		// 	}
+		if (feature_z_sort) {
+			// sorts by z, then y, then x
+			if (z == rhs.z) {
+				if (y == rhs.y) {
+					return x < rhs.x;
+				}
 
-		// 	return y < rhs.y;
-		// }
+				return y < rhs.y;
+			}
+			
+			return z < rhs.z;
+		}
 
-		// return z < rhs.z;
-
-		// sorts by z, then y, then x
+		// sorts by y, then x (default)
 		if (x == rhs.x) {
 			if (y == rhs.y) {
 				return z < rhs.z;

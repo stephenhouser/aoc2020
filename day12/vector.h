@@ -7,6 +7,7 @@
 #include <string>	 // std::string
 #include <tuple>
 #include <vector>
+#include <cassert>
 
 #include "point.h"
 
@@ -41,6 +42,51 @@ struct vector_t {
 
 	bool operator==(const vector_t& other) const {
 		return this->p == other.p && this->dir == other.dir;
+	}
+
+	std::string direction_name() {
+		// Can only work with unit vectors
+		assert(this->dir.x == 0 || this->dir.x == 1 || this->dir.x == -1);
+		assert(this->dir.y == 0 || this->dir.y == 1 || this->dir.y == -1);
+
+		// change in direction when rotating left in 45 degree steps
+		// East (1,0) -> North East (1,-1) -> North (0,1), etc...
+		std::vector<point_t> directions = {
+			{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+
+		std::vector<std::string> names = {
+			"east", "northeast", "north", "northwest", "west", "southwest", "south", "southeast"};
+
+		// find offset of vector's direction in direction table
+		size_t dir_n = 0;
+		for (; dir_n < directions.size(); dir_n++) {
+			if (this->dir == directions[dir_n]) {
+				return names[dir_n];
+			}
+		}
+
+		return "unknown";
+	}
+
+	// changes direction vector to the left in increments of 90-degrees
+	void turn_left(dimension_t angle) {
+		// only works with 90 degree increments
+		assert(angle == 90 || angle == 180 || angle == 270);
+
+		point_t next = this->dir;
+		while (angle > 0) {
+			auto temp = next.x;
+			next.x = -next.y;
+			next.y = temp;
+			angle -= 90;
+		}
+
+		this->dir = next;
+	}
+
+	// changes direction vector to the right in increments of 90-degrees
+	void turn_right(dimension_t angle) {
+		this->turn_left(360 - angle);
 	}
 };
 

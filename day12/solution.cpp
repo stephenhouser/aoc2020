@@ -17,7 +17,6 @@
 
 using namespace std;
 
-
 /* Update with data type and result types */
 using result_t = size_t;
 
@@ -49,75 +48,7 @@ const data_t read_data(const string& filename) {
 	return data;
 }
 
-const string direction_name(const point_t& dir) {
-	// Can only work with unit vectors
-	assert(dir.x == 0 || dir.x == 1 || dir.x == -1);
-	assert(dir.y == 0 || dir.y == 1 || dir.y == -1);
-
-	// change in direction when rotating left in 45 degree steps
-	// East (1,0) -> North East (1,-1) -> North (0,1), etc...
-	vector<point_t> directions = {
-		{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
-	};
-
-	vector<string> names = {
-		"east", "northeast", "north", "northwest", "west", "southwest", "south", "southeast"
-	};
-
-	// find offset of vector's direction in direction table
-	size_t dir_n = 0;
-	for ( ; dir_n < directions.size(); dir_n++) {
-		if (directions[dir_n] == dir) {
-			return names[dir_n];
-		}
-	}
-
-	return "unknown";
-}
-
-vector_t rotate_left(const vector_t& v, long int angle) {
-	// Can only work with unit vectors
-	assert(v.dir.x == 0 || v.dir.x == 1 || v.dir.x == -1);
-	assert(v.dir.y == 0 || v.dir.y == 1 || v.dir.y == -1);
-
-	// Can only work with positive angles
-	if (angle < 0) {
-		angle = 360 - angle;
-	}
-
-	// change in direction when rotating left in 45 degree steps
-	// East (1,0) -> North East (1,-1) -> North (0,1), etc...
-	vector<point_t> directions = {
-		{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
-	};
-
-	// find offset of vector's direction in direction table
-	size_t dir_n = 0;
-	for ( ; dir_n < directions.size(); dir_n++) {
-		if (directions[dir_n] == v.dir) {
-			break;
-		}
-	}
-
-	assert(dir_n < directions.size());
-
-	while (angle > 0) {
-		dir_n = (dir_n + 1) % directions.size();
-		angle -= 45;
-	}
-
-	assert(angle == 0);
-	return {v.p, directions[dir_n]};
-}
-
-vector_t rotate_right(const vector_t& v, long int angle) {
-	return rotate_left(v, 360 - angle);
-}
-
-
-/* Part 1 */
 vector_t move(const instruction_t& instr, const vector_t& v) {
-
 	vector_t next = v;
 	auto distance = instr.distance;
 	switch (instr.op) {
@@ -137,30 +68,57 @@ vector_t move(const instruction_t& instr, const vector_t& v) {
 			next.p += {(v.dir.x * distance), (v.dir.y * distance)};
 			break;
 		case 'R':
-			assert(distance == 90 || distance == 180 || distance == 270);
-			next = rotate_right(v, distance);
+			next.turn_right(distance);
 			break;
 		case 'L':
-			assert(distance == 90 || distance == 180 || distance == 270);
-			next = rotate_left(v, distance);
+			next.turn_left(distance);
 			break;
 	}
 
 	return next;
 }
 
+/* Part 1 */
 result_t part1(const data_t& data) {
-	vector_t v = {{0, 0}, {1, 0}}; 	// 0,0 facing east
+	vector_t ship = {{0, 0}, {1, 0}}; 	// 0,0 facing east
 	for (const auto& i : data) {
-		v = move(i, v);
-		print("{}{:3}: east {}, north {}; facing {}\n", i.op, i.distance, v.p.x, v.p.y, direction_name(v.dir));
+		ship = move(i, ship);
+		// print("{}{:3}: east {}, north {}; facing {}\n", i.op, i.distance, ship.p.x, ship.p.y, ship.direction_name());
 	}
 
-	return (result_t)manhattan_distance({0, 0}, v.p);
+	// return distance of ship from origin
+	return (result_t)manhattan_distance({0, 0}, ship.p);
 }
 
-result_t part2([[maybe_unused]] const data_t& data) {
-	return 0;
+/* Part 2 */
+
+result_t part2(const data_t& data) {
+	vector_t ship = {{0, 0}, {1, 0}};
+	vector_t waypoint = {{10, 1}, {0, 0}};	// waypoint is relative to the ship
+
+	for (const auto& i : data) {
+		switch (i.op) {
+			case 'F': 	// move ship to waypoint
+				ship.p += {waypoint.p.x * i.distance, waypoint.p.y * i.distance};
+				break;
+			case 'L':
+				waypoint.p.rotate_left(i.distance);
+				break;
+			case 'R':
+				waypoint.p.rotate_right(i.distance);
+				break;
+			default:	// move the waypoint
+				waypoint = move(i, waypoint);
+				break;
+		}
+
+		// print("{}{:3}: ", i.op, i.distance);
+		// print("ship: east {}, north {}; facing {} ", ship.p.x, ship.p.y, direction_name(ship.dir));
+		// print("waypoint: east {}, north {}\n", waypoint.p.x, waypoint.p.y);
+	}
+
+	// return distance of ship from origin
+	return (result_t)manhattan_distance({0, 0}, ship.p);
 }
 
 int main(int argc, char* argv[]) {
