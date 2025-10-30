@@ -59,3 +59,25 @@ std::vector<T> filter(const std::vector<T> src,
  *		return instr.op != "acc";
  *	});
  */
+
+/* Enumerate the vector V resulting in a vector of pairs (index, value)
+ * 	using I as index type and V as value type
+ */
+template <typename I, typename V>
+std::vector<std::pair<I, V>> enumerate(const std::vector<V>& vec) {
+	std::vector<std::pair<I, V>> pairs;
+
+	for (size_t i = 0; i < vec.size(); i++) {
+		pairs.push_back({static_cast<I>(i), vec[i]});
+	}
+
+	return pairs;
+}
+
+/* Example of using enumerate 
+	std::vector<int> v = {1, 2, 3 };
+	auto e = enumerate<size_t, int>(v);
+
+	Now e will be a vector of pairs:
+		[ {0, 1}, {1, 2}, {2, 3} ]
+*/

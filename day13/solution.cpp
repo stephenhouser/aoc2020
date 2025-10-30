@@ -78,72 +78,41 @@ result_t part1(const data_t& data) {
 	return bus_id * wait_time;
 }
 
-vector<pair<long int, long int>> index_pairs(const vector<size_t>& v){
-	vector<pair<long int, long int>> pairs;
-
-	for (size_t i = 0; i < v.size(); i++) {
-		if (v[i] != 0) {
-			pairs.push_back({(long int)i, (long int)v[i]});
-		}
-	}
-
-	return pairs;
-}
+using index_value_t = std::pair<size_t, size_t>;
 
 result_t part2(const data_t& data) {
-	// vector<long int> numbers = {67, 7, 59, 61};
-	// vector<long int> remainders = {0, 6, 57, 58};
-
-	// long int l = chinese_remainder(remainders, numbers);
-
-	// auto non_zero = [](size_t n) { return n != 0; };
-
-	auto pos_bus = index_pairs(data.busses);
-
-	auto to_remainder = [](const pair<long int, long int>& pair) {
-		long int remainder = (pair.second - pair.first) % pair.second;
-		std::pair<long int, long int> r = {remainder, pair.second};
-		return r;
+	auto non_zero_value = [](const index_value_t& pair) { return pair.second != 0; };
+	auto to_remainder = [](const index_value_t& pair) -> index_value_t {
+		/* .first is index/position in list, .second is the bus_id or value */
+		/* return first as (bus - pos) % bus 
+		 * make sure pos (position in list) is less than bus id
+		 * so we don't get a negative number when subtracting.
+		 */
+		size_t n = pair.first;
+		while (n > pair.second) n -= pair.second;
+		return {(pair.second - n) % pair.second, pair.second};
 	};
 
-	auto rem_mod = pos_bus | std::views::transform(to_remainder);
+	auto rem_mod = enumerate<size_t, size_t>(data.busses) 
+		| std::views::filter(non_zero_value)
+		| std::views::transform(to_remainder)
+		| std::ranges::to<vector<index_value_t>>();
 
-	auto pair_first = [](const pair<long int, long int>& p) {
-		return p.first;
-	};
-
-	auto pair_second = [](const pair<long int, long int>& p) {
-		return p.second;
-	};
-
-	auto remainders = rem_mod | std::views::transform(pair_first) | std::ranges::to<vector<long int>>();
-
-	for (const auto &i : remainders) {
-		print("{}, ", i);
-	}
-	print("\n");
-
-
-	auto busses     = rem_mod | std::views::transform(pair_second) | std::ranges::to<vector<long int>>();
-
-	for (const auto& i : busses) {
-		print("{}, ", i);
-	}
-	print("\n");
-
-	long int l = chinese_remainder(remainders, busses);
-
-	// vector<result_t> v;
-	// for (const auto &i : data.busses) {
-	// 	if (i != 0) {
-	// 		v.push_back(i);
-	// 	}
+	// for (const auto& p : rem_mod) {
+	// 	print("{:4}, {:4}\n", p.first, p.second);
 	// }
 
-	// auto l = lcm(v);
-	print("lcm={}\n", l);
+	auto pair_first = [](const index_value_t& p) -> size_t { return p.first; };
+	auto remainders = rem_mod 
+		| std::views::transform(pair_first)
+		| std::ranges::to<vector<size_t>>();
 
-	return data.busses.size();
+	auto pair_second = [](const index_value_t& p) -> size_t { return p.second; };
+	auto busses = rem_mod 
+		| std::views::transform(pair_second) 
+		| std::ranges::to<vector<size_t>>();
+
+	return chinese_remainder(remainders, busses);
 }
 
 int main(int argc, char* argv[]) {
