@@ -13,6 +13,7 @@
 
 #include "mrf.h"	// map, reduce, filter templates
 #include "split.h"	// split strings
+#include "chinese_remainder.h"
 
 using namespace std;
 
@@ -77,8 +78,72 @@ result_t part1(const data_t& data) {
 	return bus_id * wait_time;
 }
 
-result_t part2([[maybe_unused]] const data_t& data) {
-	return 0;
+vector<pair<long int, long int>> index_pairs(const vector<size_t>& v){
+	vector<pair<long int, long int>> pairs;
+
+	for (size_t i = 0; i < v.size(); i++) {
+		if (v[i] != 0) {
+			pairs.push_back({(long int)i, (long int)v[i]});
+		}
+	}
+
+	return pairs;
+}
+
+result_t part2(const data_t& data) {
+	// vector<long int> numbers = {67, 7, 59, 61};
+	// vector<long int> remainders = {0, 6, 57, 58};
+
+	// long int l = chinese_remainder(remainders, numbers);
+
+	// auto non_zero = [](size_t n) { return n != 0; };
+
+	auto pos_bus = index_pairs(data.busses);
+
+	auto to_remainder = [](const pair<long int, long int>& pair) {
+		long int remainder = (pair.second - pair.first) % pair.second;
+		std::pair<long int, long int> r = {remainder, pair.second};
+		return r;
+	};
+
+	auto rem_mod = pos_bus | std::views::transform(to_remainder);
+
+	auto pair_first = [](const pair<long int, long int>& p) {
+		return p.first;
+	};
+
+	auto pair_second = [](const pair<long int, long int>& p) {
+		return p.second;
+	};
+
+	auto remainders = rem_mod | std::views::transform(pair_first) | std::ranges::to<vector<long int>>();
+
+	for (const auto &i : remainders) {
+		print("{}, ", i);
+	}
+	print("\n");
+
+
+	auto busses     = rem_mod | std::views::transform(pair_second) | std::ranges::to<vector<long int>>();
+
+	for (const auto& i : busses) {
+		print("{}, ", i);
+	}
+	print("\n");
+
+	long int l = chinese_remainder(remainders, busses);
+
+	// vector<result_t> v;
+	// for (const auto &i : data.busses) {
+	// 	if (i != 0) {
+	// 		v.push_back(i);
+	// 	}
+	// }
+
+	// auto l = lcm(v);
+	print("lcm={}\n", l);
+
+	return data.busses.size();
 }
 
 int main(int argc, char* argv[]) {
