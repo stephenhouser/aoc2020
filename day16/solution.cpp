@@ -134,10 +134,24 @@ result_t part1(const data_t& data) {
 	const auto fields = data.fields;
 	const auto tickets = data.tickets;
 
+	// return true if field does not contain n
+	auto field_contains = [](size_t n) {
+		return [n](const field_t& field) {
+			return (field.low.min <= n && n <= field.low.max)
+				|| (field.high.min <= n && n <= field.high.max);
+		};
+	};
+
+	// returns true if no fields contain n
+	auto invalid_number = [&fields, field_contains](const size_t n) {
+		return ranges::none_of(fields, field_contains(n));
+	};
 
 	// creates a 2d vector of invalid numbers
-	auto invalid_ticket_numbers = [&fields](const ticket_t& ticket) {
-		return validate_ticket(fields, ticket);
+	auto invalid_ticket_numbers = [&fields, invalid_number](const ticket_t& ticket) {
+		return ticket 
+			| views::filter(invalid_number) 
+			| ranges::to<vector<size_t>>();
 	};
 
 	auto invalid_numbers = tickets
