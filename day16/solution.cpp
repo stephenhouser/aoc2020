@@ -96,38 +96,29 @@ const data_t read_data(const string& filename) {
 }
 
 /* Part 1 */
-bool number_in_field(const field_t& field, const size_t number) {
-	return (field.low.min <= number && number <= field.low.max)
-		|| (field.high.min <= number && number <= field.high.max);
-}
+// bool number_in_field(const field_t& field, const size_t number) {
+// 	return (field.low.min <= number && number <= field.low.max)
+// 		|| (field.high.min <= number && number <= field.high.max);
+// }
 
-vector<size_t> validate_ticket(const vector<field_t>& fields, const ticket_t& ticket) {
-	vector<size_t> invalid;
+// vector<size_t> validate_ticket(const vector<field_t>& fields, const ticket_t& ticket) {
+// 	vector<size_t> invalid;
 
-	for (const auto t : ticket) {
-		bool is_valid = false;
-		for (const auto& field : fields) {
-			if (number_in_field(field, t)) {
-				is_valid = true;
-				break;
-			}
-		}
+// 	for (const auto t : ticket) {
+// 		bool is_valid = false;
+// 		for (const auto& field : fields) {
+// 			if (number_in_field(field, t)) {
+// 				is_valid = true;
+// 				break;
+// 			}
+// 		}
 
-		if (!is_valid) {
-			invalid.push_back(t);
-		}
-	}
+// 		if (!is_valid) {
+// 			invalid.push_back(t);
+// 		}
+// 	}
 
-	return invalid;
-}
-
-// vector<bool> in_field(const vector<field_t>& fields, size_t n) {
-// 	auto in_field = [n](const field_t& field) {
-// 		return (field.low.min <= n && n <= field.low.max)
-// 			|| (field.high.min <= n && n <= field.high.max);
-// 	};
-
-// 	return fields | std::views::transform(in_field) | std::ranges::to<vector<bool>>();
+// 	return invalid;
 // }
 
 result_t part1(const data_t& data) {
@@ -147,20 +138,14 @@ result_t part1(const data_t& data) {
 		return ranges::none_of(fields, field_contains(n));
 	};
 
-	// creates a 2d vector of invalid numbers
+	// transform a ticket to a vector of invalid numbers in the ticket
 	auto invalid_ticket_numbers = [&fields, invalid_number](const ticket_t& ticket) {
-		return ticket 
-			| views::filter(invalid_number) 	// get vectors of invalid number
-			| ranges::to<vector<size_t>>();
+		return ticket | views::filter(invalid_number);
 	};
 
 	auto invalid_numbers = tickets
-		| views::transform([&fields, invalid_number](const ticket_t &ticket) {
-			return ticket 
-				| views::filter(invalid_number)
-				| ranges::to<vector<size_t>>();
-		})
-		| views::join
+		| views::transform(invalid_ticket_numbers)	// to invalid numbers
+		| views::join								// flatten to 1D
 		| ranges::to<vector<size_t>>();
 
 	return reduce<size_t, size_t>(invalid_numbers, 0ul, std::plus<size_t>());
@@ -168,8 +153,32 @@ result_t part1(const data_t& data) {
 
 /* Part 2*/
 result_t part2(const data_t& data) {
-	auto valid_ticket = [&data](const ticket_t& ticket) {
-		return validate_ticket(data.fields, ticket).size() == 0;
+	const auto fields = data.fields;
+	const auto tickets = data.tickets;
+
+	// return true if field does not contain n
+	auto field_contains = [](size_t n) {
+		return [n](const field_t& field) {
+			return (field.low.min <= n && n <= field.low.max) 
+				|| (field.high.min <= n && n <= field.high.max);
+		};
+	};
+
+	// returns fields that contain the number
+	auto fields_for_number = [&fields, field_contains](const size_t n) {
+		return fields | views::transform(field_contains(n));
+	};
+
+	// returns if ticket is valid
+	auto valid_ticket = [fields_for_number](const ticket_t& ticket) {
+		auto valid_numbers = ticket 
+			| views::transform(fields_for_number)		// [] of fields number appears in
+			| views::transform([](const auto &in_fields) {	// number appears in any field
+				return ranges::any_of(in_fields, [](const auto b) { return b; });
+			});
+
+		// all numbers in ticket are valid;
+		return ranges::all_of(valid_numbers, [](const auto b) { return b; });
 	};
 
 	vector<ticket_t> valid = data.tickets 
