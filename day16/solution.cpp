@@ -142,7 +142,7 @@ result_t part1(const data_t& data) {
 		};
 	};
 
-	// returns true if no fields contain n
+	// returns true if no field contains n
 	auto invalid_number = [&fields, field_contains](const size_t n) {
 		return ranges::none_of(fields, field_contains(n));
 	};
@@ -150,7 +150,7 @@ result_t part1(const data_t& data) {
 	// creates a 2d vector of invalid numbers
 	auto invalid_ticket_numbers = [&fields, invalid_number](const ticket_t& ticket) {
 		return ticket 
-			| views::filter(invalid_number) 
+			| views::filter(invalid_number) 	// get vectors of invalid number
 			| ranges::to<vector<size_t>>();
 	};
 
