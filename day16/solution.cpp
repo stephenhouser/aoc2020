@@ -131,16 +131,21 @@ vector<size_t> validate_ticket(const vector<field_t>& fields, const ticket_t& ti
 // }
 
 result_t part1(const data_t& data) {
-	result_t error = 0;
+	const auto fields = data.fields;
+	const auto tickets = data.tickets;
 
-	for (const auto& ticket : data.tickets) {
-		vector<size_t> invalid = validate_ticket(data.fields, ticket);
-		for (const auto n : invalid) {
-			error += n;
-		}
-	}
-	
-	return error;
+
+	// creates a 2d vector of invalid numbers
+	auto invalid_ticket_numbers = [&fields](const ticket_t& ticket) {
+		return validate_ticket(fields, ticket);
+	};
+
+	auto invalid_numbers = tickets
+		| views::transform(invalid_ticket_numbers)
+		| views::join
+		| ranges::to<vector<size_t>>();
+
+	return reduce<size_t, size_t>(invalid_numbers, 0ul, std::plus<size_t>());
 }
 
 /* Part 2*/
