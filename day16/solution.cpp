@@ -155,7 +155,11 @@ result_t part1(const data_t& data) {
 	};
 
 	auto invalid_numbers = tickets
-		| views::transform(invalid_ticket_numbers)
+		| views::transform([&fields, invalid_number](const ticket_t &ticket) {
+			return ticket 
+				| views::filter(invalid_number)
+				| ranges::to<vector<size_t>>();
+		})
 		| views::join
 		| ranges::to<vector<size_t>>();
 
