@@ -13,7 +13,6 @@
 #include <unordered_set>
 
 #include "point.h"
-#include "mrf.h"	// map, reduce, filter templates
 
 using namespace std;
 
