@@ -12,7 +12,6 @@
 #include <vector>  // collectin
 #include <regex>
 
-#include "mrf.h"	// map, reduce, filter templates
 #include "split.h"	// split strings
 
 using namespace std;
