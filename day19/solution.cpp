@@ -81,9 +81,8 @@ size_t match_rules(const rules_t& rules, const vector<size_t> match_r, const str
 	size_t consumed = 0;
 	string msg = message;
 
-	// print(" match_rules(msg={})\n", message);
+	// all the rules in the rule set given must match
 	for (const auto rule_n : match_r) {
-		// print("  match_rules(rule_n={}, msg={})\n", rule_n, msg);
 		size_t local = match_rule(rules, rule_n, msg);
 		if (local == 0) {
 			return 0;
@@ -98,14 +97,13 @@ size_t match_rules(const rules_t& rules, const vector<size_t> match_r, const str
 
 size_t match_rule(const rules_t& rules, const size_t rule_n, const string& message) {
 	rule_t rule = rules.at(rule_n);
-	// print("match_rule(r={}, msg={})\n", rule_n, message);
 
-	// rule is a leaf node
+	// rule is a leaf node, it it matches it consumes a token, if not, 0
 	if (rule.ch != ' ') {
-		// print("leaf msg[0]={} rule={}\n", message[0], rule.ch);
 		return rule.ch == message[0] ? 1 : 0;
 	}
 
+	// rule is not a leaf node, see if the left or right match
 	size_t matches = match_rules(rules, rule.left, message);
 	if (matches == 0) {
 		matches = match_rules(rules, rule.right, message);
