@@ -19,7 +19,7 @@
 | 15 | ⭐ | 🌟 | [Day 15: Rambunctious Recitation](https://adventofcode.com/2020/day/15) |
 | 16 | ⭐ | 🌟 | [Day 16: Ticket Translation](https://adventofcode.com/2020/day/16) |
 | 17 | ⭐ | 🌟 | [Day 17: Conway Cubes](https://adventofcode.com/2020/day/17) |
-| 18 |    |    |    |
+| 18 | ⭐ | 🌟 | [Day 18: Operation Order](<https://adventofcode.com/2020/day/18>) |
 | 19 |    |    |    |
 | 20 |    |    |    |
 | 21 |    |    |    |

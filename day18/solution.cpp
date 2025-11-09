@@ -17,12 +17,6 @@
 
 using namespace std;
 
-struct node_t {
-	string value = "";
-	node_t* left = NULL;
-	node_t* right = NULL;
-};
-
 /* Update with data type and result types */
 using data_t = vector<string>;
 using result_t = size_t;
@@ -46,37 +40,49 @@ const data_t read_data(const string& filename) {
 	return data;
 }
 
-/*
-	expr : term ((+ | *) term)*
-	term : number | OPEN expr CLOSE
-*/
+/* Nodes that make up the parse tree */
+struct node_t {
+	string value = "";	// number, +, *, ( or )
+	node_t* left = NULL;
+	node_t* right = NULL;
+};
+
 class parser_t {
 	public:
+
+	parser_t(const string& line) : src(line), pos(0), token("") {
+		// initialize first token
+		next();
+	}
+
+	virtual ~parser_t() {
+	}
+
+	virtual node_t* parse_expr() {
+		return NULL;
+	}
+
+	protected:
 		const string src;
 		size_t pos;
 		string token;
 
-	 parser_t(const string& line) : src(line), pos(0), token("") {
-		// initialize first token
-		next();
-	 }
+	// Here lies the lexer, the token giver
+	const string& next() {
+		// (, ), +, *, and digits
+		const regex rx("^ *(\\(|\\)|\\*|\\+|\\d+) *", regex::ECMAScript);
 
-	 // Here lies the lexer, the token giver
-	 const string next() {
-		 // (, ), +, *, and digits
-		 const regex rx("^ *(\\(|\\)|\\*|\\+|\\d+) *", regex::ECMAScript);
+		token.clear();
 
-		 string remainder = src.substr(pos);
+		smatch match;
+		string remainder = src.substr(pos);
+		if (regex_search(remainder, match, rx)) {
+			pos += match.str().size();
+			token = match[1].str();
+		}
 
-		 smatch match;
-		 if (regex_search(remainder, match, rx)) {
-			 pos += match.str().size();
-			 token = match[1].str();
-			 return token;
-		 }
-
-		 return "";
-	 }
+		return token;
+	}
 
 	node_t* parse_number() {
 		// print("parse_number -> {}\n", token());
@@ -87,7 +93,7 @@ class parser_t {
 		return node;
 	}
 
-	node_t* parse_term() {
+	node_t* parse_factor() {
 		// print("parse_term -> {}\n", token());
 		node_t* node = NULL;
 		if (token == "(") {
@@ -102,26 +108,9 @@ class parser_t {
 
 		return node;
 	}
-
-	node_t* parse_expr() {
-		// print("parse_expr -> {}\n", token());
-		node_t* node = parse_term();
-		while (token == "+" || token == "*") {
-			node_t* parent = new node_t();
-			parent->left = node;
-
-			parent->value = token;
-			next();
-
-			parent->right = parse_term();
-			node = parent;
-		}
-
-		return node;
-	}
 };
 
-/* Evaluate an expression, return the result */
+/* Evaluate an expression represented by the parse tree, return the result */
 size_t evaluate(const node_t* node) {
 	const node_t* left = node->left;
 	const node_t* right = node->right;
@@ -139,23 +128,127 @@ size_t evaluate(const node_t* node) {
 	return stoul(node->value);
 }
 
+/* Free the nodes in the parse tree */
+void free_tree(node_t* node) {
+	node_t* left = node->left;
+	node_t* right = node->right;
+
+	if (node->left) {
+		free_tree(left);
+	}
+
+	if (node->right) {
+		free_tree(right);
+	}
+
+	delete node;
+}
+
+/* Part 1 parser, + and * have same precedence 
+	expr : term ((+ | *) term)*
+	term : number | OPEN expr CLOSE
+*/
+class parser1_t : parser_t {
+   public:
+
+	parser1_t(const string& line) : parser_t(line) {
+	}
+
+	node_t* parse_expr() {
+		// print("parse_expr -> {}\n", token());
+		node_t* node = parse_factor();
+		while (token == "+" || token == "*") {
+			node_t* parent = new node_t();
+			parent->left = node;
+
+			parent->value = token;
+			next();
+
+			parent->right = parse_factor();
+			node = parent;
+		}
+
+		return node;
+	}
+};
+
 result_t part1(const data_t& equations) {
 	size_t result = 0;
 
 	for (const auto& equation : equations) {
-		auto parser = new parser_t(equation);
-		auto eq_tree = parser->parse_expr();
+		parser1_t parser(equation);
+		auto eq_tree = parser.parse_expr();
 
 		size_t local_result = evaluate(eq_tree);
-		print("local={}\n", local_result);
+		// print("local={}\n", local_result);
 		result += local_result;
+		
+		free_tree(eq_tree);
 	}
 
 	return result;
 }
 
-result_t part2([[maybe_unused]] const data_t& data) {
-	return 0;
+/* Part 2 parser, + has higher precedence than *
+	expr : term * term)*
+	factor : (term + term)*
+	term : number | OPEN expr CLOSE
+*/
+class parser2_t : parser_t {
+   public:
+	parser2_t(const string& line) : parser_t(line) {
+	}
+
+	node_t* parse_term() {
+		// print("parse_term -> {}\n", token());
+		node_t* node = parse_factor();
+		while (token == "+") {
+			node_t* parent = new node_t();
+			parent->left = node;
+
+			parent->value = token;
+			next();
+
+			parent->right = parse_factor();
+			node = parent;
+		}
+
+		return node;
+	}
+
+	node_t* parse_expr() {
+		// print("parse_expr -> {}\n", token());
+		node_t* node = parse_term();
+		while (token == "*") {
+			node_t* parent = new node_t();
+			parent->left = node;
+
+			parent->value = token;
+			next();
+
+			parent->right = parse_term();
+			node = parent;
+		}
+
+		return node;
+	}
+};
+
+result_t part2(const data_t& equations) {
+	size_t result = 0;
+
+	for (const auto& equation : equations) {
+		parser2_t parser(equation);
+		auto eq_tree = parser.parse_expr();
+
+		size_t local_result = evaluate(eq_tree);
+		// print("local={}\n", local_result);
+		result += local_result;
+
+		free_tree(eq_tree);
+	}
+
+	return result;
 }
 
 int main(int argc, char* argv[]) {
