@@ -10,14 +10,40 @@
 #include <ranges>  // ranges and views
 #include <string>  // strings
 #include <vector>  // collectin
+#include <unordered_map>
+#include <cctype>
 
 #include "mrf.h"	// map, reduce, filter templates
 #include "split.h"	// split strings
 
 using namespace std;
 
+struct rule_t {
+	size_t id = 0;
+	char ch = ' ';
+	vector<size_t> left = {};
+	vector<size_t> right = {};
+
+	rule_t(const string& rule) {
+		auto parts = split(rule, ":|\"");
+		id = stoul(parts[0]);
+		if (isdigit(parts[1][1])) {
+			left = split_size_t(parts[1]);
+			if (parts.size() > 2) {
+				right = split_size_t(parts[2]);
+			}
+		} else {
+			ch = parts[2][0];
+		}
+	}
+};
+
+using rules_t = unordered_map<size_t, rule_t>;
+using message_t = string;
+using messages_t = vector<message_t>;
+
 /* Update with data type and result types */
-using data_t = vector<string>;
+using data_t = pair<rules_t, messages_t>;
 using result_t = size_t;
 
 /* for pretty printing durations */
@@ -25,23 +51,83 @@ using duration_t = chrono::duration<double, milli>;
 
 /* Read the data file... */
 const data_t read_data(const string& filename) {
-	data_t data;
-
+	rules_t rules;
+	messages_t messages;
+	
 	std::ifstream ifs(filename);
+
+	bool reading_rules = true;
 
 	string line;
 	while (getline(ifs, line)) {
-		if (!line.empty()) {
-			data.push_back(line);
+		if (line.empty()) {
+			reading_rules = false;
+		} else if (reading_rules) {
+			rule_t rule(line);
+			rules.emplace(rule.id, rule);
+		} else {
+			messages.push_back(line);
 		}
 	}
 
-	return data;
+	return {rules, messages};
+}
+
+// trys to match all rules in vector
+// return 0 if failed, or number of tokens consumed from message
+size_t match_rule(const rules_t& rules, const size_t rule_n, const string& message);
+
+size_t match_rules(const rules_t& rules, const vector<size_t> match_r, const string& message) {
+	size_t consumed = 0;
+	string msg = message;
+
+	// print(" match_rules(msg={})\n", message);
+	for (const auto rule_n : match_r) {
+		// print("  match_rules(rule_n={}, msg={})\n", rule_n, msg);
+		size_t local = match_rule(rules, rule_n, msg);
+		if (local == 0) {
+			return 0;
+		}
+
+		consumed += local;
+		msg = msg.substr(local);
+	}
+
+	return consumed;
+}
+
+size_t match_rule(const rules_t& rules, const size_t rule_n, const string& message) {
+	rule_t rule = rules.at(rule_n);
+	// print("match_rule(r={}, msg={})\n", rule_n, message);
+
+	// rule is a leaf node
+	if (rule.ch != ' ') {
+		// print("leaf msg[0]={} rule={}\n", message[0], rule.ch);
+		return rule.ch == message[0] ? 1 : 0;
+	}
+
+	size_t matches = match_rules(rules, rule.left, message);
+	if (matches == 0) {
+		matches = match_rules(rules, rule.right, message);
+	}
+
+	return matches;
 }
 
 /* Part 1 */
 result_t part1(const data_t& data) {
-	return data.size();
+	const auto& rules = data.first;
+	const auto& messages = data.second;
+
+	result_t matches = 0;
+	for (const auto& message : messages) {
+		result_t local = match_rule(rules, 0, message);
+
+		// print("{} -> {}\n", message, local);
+		matches += (local == message.size()) ? 1 : 0ul;
+	}
+
+	return matches;
 }
 
 result_t part2([[maybe_unused]] const data_t& data) {
