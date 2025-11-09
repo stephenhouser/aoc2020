@@ -10,6 +10,7 @@
 #include <ranges>  // ranges and views
 #include <string>  // strings
 #include <vector>  // collectin
+#include <regex>
 
 #include "mrf.h"	// map, reduce, filter templates
 #include "split.h"	// split strings
@@ -29,105 +30,7 @@ using result_t = size_t;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-
 /* Read the data file... */
-const vector<string> tokenize(const string& line) {
-	vector<string> tokens;
-
-	auto parts = split(line);
-	for (auto part : parts) {
-
-		while (part.starts_with('(')) {
-			tokens.push_back("(");
-			part = part.substr(1);
-		}
-
-		size_t close = part.find(')');
-		if (close != string::npos) {
-			tokens.push_back(part.substr(0, close));
-		} else {
-			tokens.push_back(part);
-		}
-
-		while (part.ends_with(')')) {
-			tokens.push_back(")");
-			part = part.substr(0, part.size() - 1);
-		}
-	}
-	return tokens;
-}
-
-/*
-	expr : term ((+ | *) term)*
-	term : number | OPEN expr CLOSE
-*/
-class parser_t {
-	public:
-		vector<string> tokens = {};
-		size_t pos = 0;
-		string empty = "";
-
-	parser_t(const vector<string>& equation) {
-		tokens = equation;
-		pos = 0;
-	}
-
-	const string& token() {
-		if (pos < tokens.size()) {
-			return tokens[pos];
-		} else {
-			return empty;
-		}
-	}
-
-	node_t* parse_number() {
-		// print("parse_number -> {}\n", token());
-		node_t* node = new node_t();
-		node->value = token();
-		pos++;
-
-		return node;
-	}
-
-	node_t* parse_term() {
-		assert(tokens.size() > 0);
-		// print("parse_term -> {}\n", token());
-
-		node_t* node = NULL;
-		if (token() == "(") {
-			assert(tokens.size() > 1);
-
-			pos++;
-			node = parse_expr();
-
-			assert(token() == ")");
-			pos++;
-		} else {
-			node = parse_number();
-		}
-
-		return node;
-	}
-
-	node_t* parse_expr() {
-		// print("parse_expr -> {}\n", token());
-
-		node_t* node = parse_term();
-		while (token() == "+" || token() == "*") {
-			node_t* parent = new node_t();
-			parent->left = node;
-
-			parent->value = token();
-			pos++;
-
-			parent->right = parse_term();
-			node = parent;
-		}
-
-		return node;
-	}
-};
-
 const data_t read_data(const string& filename) {
 	data_t data;
 
@@ -143,6 +46,82 @@ const data_t read_data(const string& filename) {
 	return data;
 }
 
+/*
+	expr : term ((+ | *) term)*
+	term : number | OPEN expr CLOSE
+*/
+class parser_t {
+	public:
+		const string src;
+		size_t pos;
+		string token;
+
+	 parser_t(const string& line) : src(line), pos(0), token("") {
+		// initialize first token
+		next();
+	 }
+
+	 // Here lies the lexer, the token giver
+	 const string next() {
+		 // (, ), +, *, and digits
+		 const regex rx("^ *(\\(|\\)|\\*|\\+|\\d+) *", regex::ECMAScript);
+
+		 string remainder = src.substr(pos);
+
+		 smatch match;
+		 if (regex_search(remainder, match, rx)) {
+			 pos += match.str().size();
+			 token = match[1].str();
+			 return token;
+		 }
+
+		 return "";
+	 }
+
+	node_t* parse_number() {
+		// print("parse_number -> {}\n", token());
+		node_t* node = new node_t();
+		node->value = token;
+		next();
+
+		return node;
+	}
+
+	node_t* parse_term() {
+		// print("parse_term -> {}\n", token());
+		node_t* node = NULL;
+		if (token == "(") {
+			next();
+			node = parse_expr();
+
+			assert(token == ")");
+			next();
+		} else {
+			node = parse_number();
+		}
+
+		return node;
+	}
+
+	node_t* parse_expr() {
+		// print("parse_expr -> {}\n", token());
+		node_t* node = parse_term();
+		while (token == "+" || token == "*") {
+			node_t* parent = new node_t();
+			parent->left = node;
+
+			parent->value = token;
+			next();
+
+			parent->right = parse_term();
+			node = parent;
+		}
+
+		return node;
+	}
+};
+
+/* Evaluate an expression, return the result */
 size_t evaluate(const node_t* node) {
 	const node_t* left = node->left;
 	const node_t* right = node->right;
@@ -164,8 +143,7 @@ result_t part1(const data_t& equations) {
 	size_t result = 0;
 
 	for (const auto& equation : equations) {
-		auto tokens = tokenize(equation);
-		auto parser = new parser_t(tokens);
+		auto parser = new parser_t(equation);
 		auto eq_tree = parser->parse_expr();
 
 		size_t local_result = evaluate(eq_tree);
