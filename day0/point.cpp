@@ -10,6 +10,9 @@ std::ostream& operator<<(std::ostream& os, const point_t& p) {
 	os << "(" << p.x << "," << p.y;
 	if (p.z) {
 		os << "," << p.z;
+		if (p.w) {
+			os << "," << p.w;
+		}
 	}
 	os << ")";
 	return os;
@@ -26,7 +29,11 @@ std::istream& operator>>(std::istream& is, point_t& p) {
 	char delim;
 	if (is >> p.x >> delim >> p.y) {
 		if (is.get() == delim) {
-			is >> p.z;
+			if(is >> p.z) {
+				if (is.get() == delim) {
+					is >> p.w;
+				}
+			}
 		}
 	}
 

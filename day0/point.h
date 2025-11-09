@@ -28,9 +28,22 @@ struct point_t {
 	/* Use templates for constructor so I don't have to worry about
 	 * mixing int and unsigned int, size_t, etc. on creation. */
 	template <std::convertible_to<dimension_t> Tx, std::convertible_to<dimension_t> Ty>
-	point_t(Tx x, Ty y, Tx z = 0) : x(static_cast<dimension_t>(x)),
-									y(static_cast<dimension_t>(y)),
-									z(static_cast<dimension_t>(z)) {
+	point_t(Tx x, Ty y, Tx z, Tx w) : x(static_cast<dimension_t>(x)),
+									  y(static_cast<dimension_t>(y)),
+									  z(static_cast<dimension_t>(z)),
+									  w(static_cast<dimension_t>(w)) {
+	}
+
+	template <std::convertible_to<dimension_t> Tx, std::convertible_to<dimension_t> Ty>
+	point_t(Tx x, Ty y, Tx z) : x(static_cast<dimension_t>(x)),
+								y(static_cast<dimension_t>(y)),
+								z(static_cast<dimension_t>(z)) {
+	}
+	template <std::convertible_to<dimension_t> Tx, std::convertible_to<dimension_t> Ty>
+	point_t(Tx x, Ty y) : x(static_cast<dimension_t>(x)),
+						  y(static_cast<dimension_t>(y)),
+						  z(0),
+						  w(0) {
 	}
 
 	point_t(const point_t& p) : x(static_cast<dimension_t>(p.x)),
@@ -55,6 +68,9 @@ struct point_t {
 				this->y = static_cast<dimension_t>(v[1]);
 				if (v.size() > 2) {
 					this->z = static_cast<dimension_t>(v[2]);
+					if (v.size() > 3) {
+						this->w = static_cast<dimension_t>(v[3]);
+					}
 				}
 			}
 		}
@@ -103,6 +119,10 @@ struct point_t {
 		// sorts by y, then x (default)
 		if (x == rhs.x) {
 			if (y == rhs.y) {
+				if (z == rhs.z) {
+					return w < rhs.w;
+				}
+
 				return z < rhs.z;
 			}
 
@@ -113,7 +133,10 @@ struct point_t {
 	}
 
 	bool operator==(const point_t& other) const {
-		return this->x == other.x && this->y == other.y && this->z == other.z;
+		return this->x == other.x 
+			&& this->y == other.y 
+			&& this->z == other.z
+			&& this->w == other.w;
 	}
 
 	bool operator!=(const point_t& other) const {
@@ -134,6 +157,9 @@ struct point_t {
 		this->x += rhs.x;
 		this->y += rhs.y;
 		this->z += rhs.z;
+		// this->u += rhs.u;
+		// this->v += rhs.v;
+		this->w += rhs.w;
 		return *this;
 	}
 
@@ -147,6 +173,9 @@ struct point_t {
 		this->x -= rhs.x;
 		this->y -= rhs.y;
 		this->z -= rhs.z;
+		// this->u -= rhs.u;
+		// this->v -= rhs.v;
+		this->w -= rhs.w;
 		return *this;
 	}
 
@@ -187,7 +216,11 @@ std::istream& operator>>(std::istream& is, point_t& p);
 template <>
 struct std::hash<point_t> {
 	size_t operator()(const point_t& p) const {
-		return std::hash<size_t>()((((size_t)p.z & 0xFFFF) << 32) | (((size_t)p.x & 0xFFFF) << 24) | (((size_t)p.y & 0xFFFF)));
+		return std::hash<size_t>()(
+			  (((size_t)p.w & 0xFFFF) << 48)
+			| (((size_t)p.z & 0xFFFF) << 32) 
+			| (((size_t)p.x & 0xFFFF) << 24) 
+			| (((size_t)p.y & 0xFFFF)));
 	}
 };
 
@@ -203,6 +236,9 @@ struct std::formatter<point_t> {
 		std::format_to(out, "({},{}", p.x, p.y);
 		if (p.z) {
 			std::format_to(out, ",{}", p.z);
+			if (p.w) {
+				std::format_to(out, ",{}", p.w);
+			}
 		}
 		std::format_to(out, ")");
 
@@ -214,7 +250,10 @@ inline dimension_t manhattan_distance(const point_t& p1, const point_t& p2) {
 	dimension_t dx = p1.x > p2.x ? p1.x - p2.x : p2.x - p1.x;
 	dimension_t dy = p1.y > p2.y ? p1.y - p2.y : p2.y - p1.y;
 	dimension_t dz = p1.z > p2.z ? p1.z - p2.z : p2.z - p1.z;
-	return dx + dy + dz;
+	// dimension_t du = p1.u > p2.u ? p1.u - p2.u : p2.u - p1.u;
+	// dimension_t dv = p1.v > p2.v ? p1.v - p2.v : p2.v - p1.v;
+	dimension_t dw = p1.w > p2.w ? p1.w - p2.w : p2.w - p1.w;
+	return dx + dy + dz + dw;
 }
 
 // read points until we hit an empty line
