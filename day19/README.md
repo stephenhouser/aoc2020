@@ -14,3 +14,6 @@ it was sorting the small details.
 
 ## Part 2
 
+Rewrote the match to still use recursion but to prepend the left and right
+rulesets (one at a time) to the current ruleset sequence and see if those
+match.
