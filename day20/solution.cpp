@@ -21,12 +21,13 @@ using namespace std;
 
 struct tile_t {
 	size_t id = 0;
-	vector<size_t> sides = {};
+	vector<size_t> edges = {};
+	string tilemap = "";
 
-	bool has_side(const size_t pattern) {
+	bool has_edge(const size_t needle) {
 		// this is the any() function
-		for (const auto side : sides) {
-			if (pattern == side) {
+		for (const auto edge : edges) {
+			if (needle == edge) {
 				return true;
 			}
 		}
@@ -44,13 +45,14 @@ using duration_t = chrono::duration<double, milli>;
 
 void print_tile(const tile_t& tile) {
 	print("Tile: {}: ", tile.id);
-	for (const auto s : tile.sides) {
-		print("{:010b}, ", s);
+	for (const auto edge : tile.edges) {
+		print("{:010b}, ", edge);
 	}
 	print("\n");
 }
 
-const string match_single(const string& text, const string& re) {
+/* Return the first match of regex in text */
+const string match_first(const string& text, const string& re) {
 	smatch match;
 	const regex rx(re);
 	if (regex_search(text, match, rx)) {
@@ -60,9 +62,7 @@ const string match_single(const string& text, const string& re) {
 	return "";
 }
 
-/* Matches possibly multiple instances of `re` in `text` and combines
- * the matched text into a single string that is returned.
- */
+/* Return a string with all the matches of regex in text concatenated to a string. */
 const string match_combine(const string& text, const string& re) {
 	string result;
 	smatch match;
@@ -71,6 +71,36 @@ const string match_combine(const string& text, const string& re) {
 	for (sregex_iterator it = sregex_iterator(text.begin(), text.end(), rx); it != sregex_iterator(); it++) {
 		smatch match(*it);
 		result.append(match.str(1));
+	}
+
+	return result;
+}
+
+// 
+const string tile_map(const string& text) {
+	vector<string> rows;
+	smatch match;
+
+	const regex rx("\\|[\\\\.#]([\\\\.#]+)[\\\\.#]");
+	auto begin = sregex_iterator(text.begin(), text.end(), rx);
+	auto end = sregex_iterator();
+
+	bool first_row = true;
+	for (auto it = begin; it != end; ++it) {
+		if (!first_row) {
+			rows.push_back((*it).str(1));
+		}
+
+		first_row = false;
+	}
+
+	// remove last line
+	rows.pop_back();
+
+	string result = "";
+	for (const auto& row : rows) {
+		result.append(row);
+		result.append("|");
 	}
 
 	return result;
@@ -86,30 +116,34 @@ size_t parse_code(const string& text) {
 	return code;
 }
 
-size_t reverse_code(const string& text) {
+size_t parse_code_reverse(const string& text) {
 	string r(text);
 	reverse(r.begin(), r.end());
 	return parse_code(r);
 }
 
+/* Parse the raw text defineing a tile to a `tile_t` struct */
 const tile_t parse_tile(const string& raw_text) {
 	tile_t tile;
 
 	tile.id = stoul(match_combine(raw_text, "^Tile (\\d+):"));
 
-	const vector<string> sides_rx = {
+	const vector<string> edge_rxs = {
 		":\\|([\\.#]+)\\|",		// top
 		"([\\.#])\\|",			// right
 		"\\|([\\.#]+)\\|$", 	// bottom
 		"\\|([\\.#])",			// left
 	};
 
-	for (const auto& rx : sides_rx) {
-		const string side_chars = match_combine(raw_text, rx);
-		tile.sides.push_back(parse_code(side_chars));
-		tile.sides.push_back(reverse_code(side_chars));
+	for (const auto& rx : edge_rxs) {
+		const string edge_text = match_combine(raw_text, rx);
+		tile.edges.push_back(parse_code(edge_text));
+		tile.edges.push_back(parse_code_reverse(edge_text));
 	}
 
+	// gets middle tile data
+	tile.tilemap = tile_map(raw_text);
+	// print("{}: {}\n", tile.id, tile.tilemap);
 	return tile;
 }
 
@@ -137,34 +171,31 @@ const data_t read_data(const string& filename) {
 }
 
 /* Part 1 */
-result_t part1(const data_t& data) {
-	// for (const auto& tile : data) {
-	// 	print_tile(tile);
-	// }
-
+result_t part1(const data_t& tiles) {
 	// make map of edges -> tiles 
-	unordered_map<size_t, vector<tile_t>> by_code;
-	for (const auto& tile : data) {
-		for (const auto code : tile.sides) {
-			by_code[code].push_back(tile);
+	unordered_map<size_t, vector<tile_t>> edges;
+	for (const auto& tile : tiles) {
+		for (const auto edge : tile.edges) {
+			edges[edge].push_back(tile);
 		}
 	}
 
-	// // show edges and number of tiles connected to edge
-	// for (const auto& item : by_code) {
-	// 	print("{:010b}: ", item.first);
-	// 	for (const auto& tile : item.second) {
+	// show edges and number of tiles connected to edge
+	// for (const auto& [edge, neighbors] : edges) {
+	// 	print("{:010b}: ", edge);
+	// 	for (const auto& tile : neighbors) {
 	// 		print("{}, ", tile.id);
 	// 	}
 	// 	print("\n");
 	// }
 
 	// a corner tile will only have two possible common edges
+	// 4 in our case because we added the reverse bit pattern
 	vector<tile_t> corners;
-	for (const auto& tile : data) {
+	for (const auto& tile : tiles) {
 		size_t neighbors = 0;
-		for (const auto code : tile.sides) {
-			neighbors += by_code[code].size() - 1;
+		for (const auto edge : tile.edges) {
+			neighbors += edges[edge].size() - 1;
 		}
 
 		if (neighbors == 4) {
@@ -172,11 +203,11 @@ result_t part1(const data_t& data) {
 		}
 	}
 
-	//
+	// product of the corner tiles
 	size_t result = 1;
 	for (const auto& tile : corners) {
 		result *= tile.id;
-		print_tile(tile);
+		// print_tile(tile);
 	}
 
 
