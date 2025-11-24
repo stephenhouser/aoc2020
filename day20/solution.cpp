@@ -35,7 +35,7 @@ const string match_combine(const string& text, const string& re) {
 	string result;
 	smatch match;
 
-	const regex rx(re);
+	const regex rx(re, std::regex::ECMAScript);
 	for (sregex_iterator it = sregex_iterator(text.begin(), text.end(), rx); it != sregex_iterator(); it++) {
 		smatch match(*it);
 		result.append(match.str(1));
@@ -72,10 +72,10 @@ struct tile_t {
 		unordered_set<size_t> edges;
 
 		const vector<string> edge_rxs = {
-			"^\\|([\\.#]+)\\|",		// top
-			"([\\.#])\\|",			// right
-			"\\|([\\.#]+)\\|$", 	// bottom
-			"\\|([\\.#])",			// left
+			"^([\\.#]+)\n",		// top
+			"[\\.#]+([\\.#])",	// right
+			"([\\.#]+)\n+$", 	// bottom
+			"([\\.#])[\\.#]+",	// left
 		};
 	
 		for (const auto& rx : edge_rxs) {
@@ -91,7 +91,7 @@ struct tile_t {
 		vector<string> rows;
 		smatch match;
 	
-		const regex rx("\\|[\\\\.#]([\\\\.#]+)[\\\\.#]");
+		const regex rx("\n[\\\\.#]([\\\\.#]+)[\\\\.#]");
 		auto begin = sregex_iterator(tile_data.begin(), tile_data.end(), rx);
 		auto end = sregex_iterator();
 	
@@ -110,12 +110,21 @@ struct tile_t {
 		string result = "";
 		for (const auto& row : rows) {
 			result.append(row);
-			result.append("|");
+			result.append("\n");
 		}
 	
 		return result;
 	}
 };
+
+void print_tile(const tile_t& tile) {
+	print("{}: ", tile.id);
+	for (const auto &n : tile.neighbors) {
+		print("{}, ", n);
+	}
+	print("\n");
+	print("{}", tile.tile_data);
+}
 
 /* Update with data type and result types */
 using data_t = unordered_map<size_t, tile_t>;
@@ -128,8 +137,8 @@ using duration_t = chrono::duration<double, milli>;
 const tile_t parse_tile(const string& raw_text) {
 	tile_t tile;
 
-	tile.id = stoul(match_combine(raw_text, "^Tile (\\d+):"));
-	tile.tile_data = raw_text.substr(raw_text.find_first_of("|"));
+	tile.id = stoul(match_combine(raw_text, "^Tile (\\d+):\n"));
+	tile.tile_data = raw_text.substr(raw_text.find_first_of("\n")+1);
 	return tile;
 }
 
@@ -161,7 +170,7 @@ const data_t read_data(const string& filename) {
 			raw_tile.clear();
 		} else {
 			raw_tile.append(line);
-			raw_tile.append("|");
+			raw_tile.append("\n");
 		}
 	}
 
@@ -184,6 +193,7 @@ const data_t read_data(const string& filename) {
 
 	for (auto& [id, tile] : tiles) {
 		tile.neighbors = neighbors_of[tile.id];
+		// print_tile(tile);
 	}
 
 	return tiles;

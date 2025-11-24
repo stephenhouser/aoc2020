@@ -4,6 +4,8 @@
 
 Use `regex` to parse the input, giving it a go rather than hand-parsing. `data` is vector of tiles.
 
+NOTE: std::regex is notoriously slow!
+
 Parse the edges (top, left, bottom, and right) as `size_t` where `. == 0` and `# == 1` bits in order. Example: `....####` is `0x0F`. With 10x10 tiles, these are 10-bit ints.
 
 Add these edges into the tile's list of edges. Also add the reverse for where we might flip and rotate the tile. Example `....####` is `0x0F` and it's reverse is `0xF0`, so they both get pushed as edges of the tile.
