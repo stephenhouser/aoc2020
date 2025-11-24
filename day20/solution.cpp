@@ -19,39 +19,6 @@
 
 using namespace std;
 
-struct tile_t {
-	size_t id = 0;
-	vector<size_t> edges = {};
-	string tilemap = "";
-	size_t orientation = 0;
-
-	bool has_edge(const size_t needle) {
-		// this is the any() function
-		for (const auto edge : edges) {
-			if (needle == edge) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-};
-
-/* Update with data type and result types */
-using data_t = vector<tile_t>;
-using result_t = size_t;
-
-/* for pretty printing durations */
-using duration_t = chrono::duration<double, milli>;
-
-void print_tile(const tile_t& tile) {
-	print("Tile: {}: ", tile.id);
-	for (const auto edge : tile.edges) {
-		print("{:010b}, ", edge);
-	}
-	print("\n");
-}
-
 /* Return the first match of regex in text */
 const string match_first(const string& text, const string& re) {
 	smatch match;
@@ -93,72 +60,104 @@ size_t parse_edge_reverse(const string& text) {
 	return parse_edge(r);
 }
 
-// extract tile data from raw text
-const string parse_tilemap(const string& text) {
-	vector<string> rows;
-	smatch match;
 
-	const regex rx("\\|[\\\\.#]([\\\\.#]+)[\\\\.#]");
-	auto begin = sregex_iterator(text.begin(), text.end(), rx);
-	auto end = sregex_iterator();
+struct tile_t {
+	size_t id = 0;
+	unordered_set<size_t> neighbors = {};
+	string tile_data = "";
 
-	bool first_row = true;
-	for (auto it = begin; it != end; ++it) {
-		if (!first_row) {
-			rows.push_back((*it).str(1));
+	string tile_map = "";
+
+	const unordered_set<size_t> get_edges() const {
+		unordered_set<size_t> edges;
+
+		const vector<string> edge_rxs = {
+			"^\\|([\\.#]+)\\|",		// top
+			"([\\.#])\\|",			// right
+			"\\|([\\.#]+)\\|$", 	// bottom
+			"\\|([\\.#])",			// left
+		};
+	
+		for (const auto& rx : edge_rxs) {
+			const string edge_text = match_combine(tile_data, rx);
+			edges.insert(parse_edge(edge_text));
+			edges.insert(parse_edge_reverse(edge_text));
 		}
-
-		first_row = false;
+	
+		return edges;
 	}
 
-	// remove last line
-	rows.pop_back();
-
-	string result = "";
-	for (const auto& row : rows) {
-		result.append(row);
-		result.append("|");
+	const string get_tile_map() const {
+		vector<string> rows;
+		smatch match;
+	
+		const regex rx("\\|[\\\\.#]([\\\\.#]+)[\\\\.#]");
+		auto begin = sregex_iterator(tile_data.begin(), tile_data.end(), rx);
+		auto end = sregex_iterator();
+	
+		bool first_row = true;
+		for (auto it = begin; it != end; ++it) {
+			if (!first_row) {
+				rows.push_back((*it).str(1));
+			}
+	
+			first_row = false;
+		}
+	
+		// remove last line
+		rows.pop_back();
+	
+		string result = "";
+		for (const auto& row : rows) {
+			result.append(row);
+			result.append("|");
+		}
+	
+		return result;
 	}
+};
 
-	return result;
-}
+/* Update with data type and result types */
+using data_t = unordered_map<size_t, tile_t>;
+using result_t = size_t;
+
+/* for pretty printing durations */
+using duration_t = chrono::duration<double, milli>;
 
 /* Parse the raw text defineing a tile to a `tile_t` struct */
 const tile_t parse_tile(const string& raw_text) {
 	tile_t tile;
 
 	tile.id = stoul(match_combine(raw_text, "^Tile (\\d+):"));
+	tile.tile_data = raw_text.substr(raw_text.find_first_of("|"));
+	return tile;
+}
 
-	const vector<string> edge_rxs = {
-		":\\|([\\.#]+)\\|",		// top
-		"([\\.#])\\|",			// right
-		"\\|([\\.#]+)\\|$", 	// bottom
-		"\\|([\\.#])",			// left
-	};
+/* Return a map of all edges to their corresponding tiles */
+unordered_map<size_t, unordered_set<size_t>> get_edges(const data_t& tiles) {
+	unordered_map<size_t, unordered_set<size_t>> edges;
 
-	for (const auto& rx : edge_rxs) {
-		const string edge_text = match_combine(raw_text, rx);
-		tile.edges.push_back(parse_edge(edge_text));
-		tile.edges.push_back(parse_edge_reverse(edge_text));
+	for (const auto& [id, tile] : tiles) {
+		for (const auto edge : tile.get_edges()) {
+			edges[edge].insert(tile.id);
+		}
 	}
 
-	// gets middle tile data
-	tile.tilemap = parse_tilemap(raw_text);
-	return tile;
+	return edges;
 }
 
 /* Read the data file... */
 const data_t read_data(const string& filename) {
-	data_t data;
+	data_t tiles;
 
 	std::ifstream ifs(filename);
 
 	string raw_tile;
-
 	string line;
 	while (getline(ifs, line)) {
 		if (line.empty()) {
-			data.push_back(parse_tile(raw_tile));
+			tile_t tile = parse_tile(raw_tile);
+			tiles[tile.id] = tile;
 			raw_tile.clear();
 		} else {
 			raw_tile.append(line);
@@ -166,123 +165,90 @@ const data_t read_data(const string& filename) {
 		}
 	}
 
-	data.push_back(parse_tile(raw_tile));
-	return data;
-}
+	tile_t tile = parse_tile(raw_tile);
+	tiles[tile.id] = tile;
 
-/* Part 1 */
-result_t part1(const data_t& tiles) {
-	// make map of edges -> tiles 
-	unordered_map<size_t, vector<size_t>> edges;
-	for (const auto& tile : tiles) {
-		for (const auto edge : tile.edges) {
-			edges[edge].push_back(tile.id);
+	unordered_map<size_t, unordered_set<size_t>> neighbors_of;
+	auto edges = get_edges(tiles);
+
+	// add neighbors based on edges
+	for (const auto& [edge, neighbor_set] : edges) {
+		assert(neighbor_set.size() <= 2);
+
+		if (neighbor_set.size() == 2) {
+			const vector<size_t> neighbors(neighbor_set.begin(), neighbor_set.end());
+			neighbors_of[neighbors[0]].insert(neighbors[1]);
+			neighbors_of[neighbors[1]].insert(neighbors[0]);
 		}
 	}
 
-	auto count_neighbors = [&edges](const auto& tile) {
-		size_t neighbors = 0;
-		for (const auto edge : tile.edges) {
-			neighbors += edges[edge].size() - 1;
-		}
+	for (auto& [id, tile] : tiles) {
+		tile.neighbors = neighbors_of[tile.id];
+	}
 
-		return neighbors >> 1;	// divide by 2 for duplicates
-	};
+	return tiles;
+}
 
-	auto is_corner = [&count_neighbors](const auto& tile) {
-		return count_neighbors(tile) == 2;
-	};
+
+/* Part 1 */
+result_t part1(const data_t& tiles) {
 
 	auto corners = tiles 
-		| views::filter(is_corner)
-		| views::transform([](const auto& tile) { return tile.id; })
+		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
+		| views::transform([](const auto& tile) { return tile.first; })
 		| views::common;
 		
-	size_t result = std::accumulate(corners.begin(), corners.end(), 1u, multiplies());
+	size_t result = std::accumulate(corners.begin(), corners.end(), 1ul, multiplies());
 	return result;
 }
 
 result_t part2(const data_t& tiles) {
-	unordered_map<size_t, vector<size_t>> edges;
-	for (const auto& tile : tiles) {
-		for (const auto edge : tile.edges) {
-			edges[edge].push_back(tile.id);
-		}
-	}
 
-	// show edges and number of tiles connected to edge
-	// for (const auto& [edge, neighbors] : edges) {
-	// 	print("{:010b}: ", edge);
-	// 	for (const auto& tile : neighbors) {
-	// 		print("{}, ", tile.id);
-	// 	}
-	// 	print("\n");
-	// }
+	auto corners = tiles 
+		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
+		| views::transform([](const auto& tile) { return tile.first; })
+		| ranges::to<vector<size_t>>();
 
-	// tile_id,
-	unordered_map<size_t, unordered_set<size_t>> neighbors;
-	vector<size_t> corners;
-	for (const auto& tile : tiles) {
-		for (const auto edge : tile.edges) {
-			for (const auto neighbor : edges[edge]) {
-				if (neighbor != tile.id) {
-					neighbors[tile.id].insert(neighbor);
-				}
-			}			
-		}
+		//std::ranges::to<std::vector<int>>();
 
-		if (neighbors[tile.id].size() == 2) {
-			corners.push_back(tile.id);
-		}
-	}
+	print("{}\n", corners.size());
+	// size_t map[100][100] = { 0 };
 
-	print("Neighbors:\n");
-	for (const auto& [tile_id, nbrs] : neighbors) {
-		print("{}: ", tile_id);
-		for (const auto n : nbrs) {
-			print("{}, ", n);
-		}
-		print("\n");
-	}
+	// size_t col = 0;
+	// size_t row = 0;
 
-	assert(corners.size() == 4);
-	size_t map[100][100] = { 0 };
-
-	size_t col = 0;
-	size_t row = 0;
-
-	vector<size_t> queue;
-	queue.push_back(corners[0]);	// 2 neighbors
+	// vector<size_t> queue;
+	// queue.push_back(corners[0]);	// 2 neighbors
 	
-	while (queue.size()) {
-		size_t tile_id = queue.back();
-		queue.pop_back();
+	// while (queue.size()) {
+	// 	size_t tile_id = queue.back();
+	// 	queue.pop_back();
 
-		// place tile
-		map[col][row] = tile_id;
+	// 	// place tile
+	// 	map[col][row] = tile_id;
 
-		// remove this tile from neighbors
-		for (const auto neighbor_id : neighbors[tile_id]) {
-			neighbors[neighbor_id].erase(tile_id);
-		}
+	// 	// remove this tile from neighbors
+	// 	for (const auto neighbor_id : neighbors[tile_id]) {
+	// 		neighbors[neighbor_id].erase(tile_id);
+	// 	}
 
-		if (neighbors[tile_id].size() == 0) {
-			print("End Map\n");
-			break;
-		}
+	// 	if (neighbors[tile_id].size() == 0) {
+	// 		print("End Map\n");
+	// 		break;
+	// 	}
 
-		if (neighbors[tile_id].size() == 1) {
-			print("End Row\n");
-			row++;
-			continue;
-		}
+	// 	if (neighbors[tile_id].size() == 1) {
+	// 		print("End Row\n");
+	// 		row++;
+	// 		continue;
+	// 	}
 
-		if (neighbors[tile_id].size() == 2) {
+	// 	if (neighbors[tile_id].size() == 2) {
 
-		}
-	}	
-	print("{}\n", map[0][0]);
-	return 0;
+	// 	}
+	// }	
+	// print("{}\n", map[0][0]);
+	return tiles.size();
 }
 
 int main(int argc, char* argv[]) {
