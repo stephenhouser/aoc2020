@@ -177,10 +177,10 @@ const data_t read_data(const string& filename) {
 	tile_t tile = parse_tile(raw_tile);
 	tiles[tile.id] = tile;
 
+	// calculate neighbors based on edges
 	unordered_map<size_t, unordered_set<size_t>> neighbors_of;
 	auto edges = get_edges(tiles);
 
-	// add neighbors based on edges
 	for (const auto& [edge, neighbor_set] : edges) {
 		assert(neighbor_set.size() <= 2);
 
@@ -191,9 +191,9 @@ const data_t read_data(const string& filename) {
 		}
 	}
 
+	// add neighbors to tiles
 	for (auto& [id, tile] : tiles) {
 		tile.neighbors = neighbors_of[tile.id];
-		// print_tile(tile);
 	}
 
 	return tiles;
