@@ -63,7 +63,7 @@ size_t parse_edge_reverse(const string& text) {
 
 struct tile_t {
 	size_t id = 0;
-	unordered_set<size_t> neighbors = {};
+	vector<size_t> neighbors = {};
 	string tile_data = "";
 
 	string tile_map = "";
@@ -193,16 +193,20 @@ const data_t read_data(const string& filename) {
 
 	// add neighbors to tiles
 	for (auto& [id, tile] : tiles) {
-		tile.neighbors = neighbors_of[tile.id];
+		// tile.neighbors = neighbors_of[tile.id];
+		vector<size_t> neighbors(neighbors_of[tile.id].begin(), neighbors_of[tile.id].end());
+		tile.neighbors = neighbors;
 	}
 
 	return tiles;
 }
 
+size_t hashit(size_t x, size_t y) {
+	return (x & 0xFFFFul << 16) | (y & 0xFFFFul);
+}
 
 /* Part 1 */
 result_t part1(const data_t& tiles) {
-
 	auto corners = tiles 
 		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
 		| views::transform([](const auto& tile) { return tile.first; })
@@ -212,20 +216,85 @@ result_t part1(const data_t& tiles) {
 	return result;
 }
 
-result_t part2(const data_t& tiles) {
+vector<size_t> intersection(const vector<size_t>& a, const vector<size_t>& b) {
+	vector<size_t> isect;
+	for (const auto& a_elem : a) {
+		for (const auto b_elem : b) {
+			if (a_elem == b_elem) {
+				isect.push_back(a_elem);
 
+			}
+		}
+	}
+
+	return isect;
+}
+
+vector<size_t> unplaced_neighbors(const data_t& tiles, unordered_set<size_t>& unplaced, size_t tid) {
+	vector<size_t> neighbors;
+
+	const auto& tile = tiles.at(tid);
+	for (const auto n : tile.neighbors) {
+		if (unplaced.contains(n)) {
+			neighbors.push_back(n);
+		}
+	}
+
+	return neighbors;
+}
+
+result_t part2(const data_t& tiles) {
 	auto corners = tiles 
 		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
 		| views::transform([](const auto& tile) { return tile.first; })
 		| ranges::to<vector<size_t>>();
 
-		//std::ranges::to<std::vector<int>>();
+	// map of tile location hashit(x,y) -> tile_id
+	unordered_map<size_t, size_t> tile_map;
 
-	print("{}\n", corners.size());
-	// size_t map[100][100] = { 0 };
+	unordered_set<size_t> unplaced;
+	for (const auto& [id, tile] : tiles) {
+		unplaced.insert(id);
+	}
 
-	// size_t col = 0;
-	// size_t row = 0;
+	size_t y = 0;
+	size_t x = 0;
+
+	const tile_t tile = tiles.at(corners[0]);
+	tile_map[hashit(x,y)] = tile.id;
+	unplaced.erase(tile.id);
+
+	print("Top  : {}\n", tile.id);
+
+	auto top_n = unplaced_neighbors(tiles, unplaced, tile.id);
+	if (top_n.size() == 2) {
+		auto right = top_n.back();
+		top_n.pop_back();
+
+		tile_map[hashit(x+1,y)] = right;
+		unplaced.erase(right);
+		print("right: {}\n", right);	
+	}
+
+	if (top_n.size() == 1) {
+		auto down = top_n.back();
+		top_n.pop_back();
+
+		tile_map[hashit(x,y+1)] = down;
+		unplaced.erase(down);
+		print("down : {}\n", down);
+	}
+
+	auto common = intersection(right_tile.neighbors, down_tile.neighbors);
+	for (const auto diag : common) {
+		if (unplaced.contains(diag)) {
+			print("diag : {}\n", diag);
+			break;
+		}
+	}
+
+	// find tile with 
+
 
 	// vector<size_t> queue;
 	// queue.push_back(corners[0]);	// 2 neighbors
