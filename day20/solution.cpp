@@ -109,13 +109,10 @@ struct tile_t {
 	}
 };
 
+/* Return a new tile (with the same id) rotated 90 degrees. */
 tile_t rotate(const tile_t& tile) {
-	vector<string> rotated;
 	size_t dim = tile.data.size();
-
-	for (size_t x = 0; x < dim; x++) {
-		rotated.push_back("");
-	}
+	vector<string> rotated(dim);
 
 	for (size_t y = 0; y < dim; y++) {
 		for (size_t x = 0; x < dim; x++) {
@@ -126,16 +123,16 @@ tile_t rotate(const tile_t& tile) {
 	return {tile.id, rotated};
 }
 
+/* Return a new tile (with the same id) with rows reversed (flipped) */
 tile_t flip(const tile_t& tile) {
-	vector<string> flipped;
-
-	for (size_t y = tile.data.size(); y != 0; y--) {
-		flipped.push_back(tile.data[y-1]);
-	}
+	vector<string> flipped(tile.data.rbegin(), tile.data.rend());
 
 	return {tile.id, flipped};
 }
 
+/* Return a vector containing all possible variations(transformations)
+ * of the original tile. All rotations and flips.
+ */
 vector<tile_t> tile_transforms(const tile_t& tile) {
 	tile_t work = tile;
 	vector<tile_t> tiles = {work, flip(work)};
@@ -155,7 +152,6 @@ using result_t = size_t;
 
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
-
 
 /* Read the data file... */
 const data_t read_data(const string& filename) {
@@ -183,6 +179,9 @@ const data_t read_data(const string& filename) {
 	return tiles;
 }
 
+/* Find tile index of tile that fits above of tile with index `idx` in `all` 
+ * tiles or size of the `all` tile vector to signal not-found.
+ */
 size_t find_above(const size_t id, const vector<tile_t>& all) {
 	const tile_t &tile = all[id];
 
@@ -196,6 +195,9 @@ size_t find_above(const size_t id, const vector<tile_t>& all) {
 	return all.size();
 }
 
+/* Find tile index of tile that fits left of tile with index `idx` in `all`
+ * tiles or size of the `all` tile vector to signal not-found.
+ */
 size_t find_left(const size_t id, const vector<tile_t>& all) {
 	const tile_t &tile = all[id];
 
@@ -209,8 +211,11 @@ size_t find_left(const size_t id, const vector<tile_t>& all) {
 	return all.size();
 }
 
-size_t find_right(const size_t id, const vector<tile_t>& all) {
-	const tile_t &tile = all[id];
+/* Find tile index of tile that fits right of tile with index `idx` in `all`
+ * tiles or size of the `all` tile vector to signal not-found.
+ */
+size_t find_right(const size_t idx, const vector<tile_t>& all) {
+	const tile_t &tile = all[idx];
 
 	for (size_t i = 0; i < all.size(); i++) {
 		const tile_t& other = all[i];
@@ -222,8 +227,11 @@ size_t find_right(const size_t id, const vector<tile_t>& all) {
 	return all.size();
 }
 
-size_t find_below(const size_t id, const vector<tile_t>& all) {
-	const tile_t &tile = all[id];
+/* Find tile index of tile that fits below tile with index `idx` in `all`
+ * tiles or size of the `all` tile vector to signal not-found.
+ */
+size_t find_below(const size_t idx, const vector<tile_t>& all) {
+	const tile_t &tile = all[idx];
 
 	for (size_t i = 0; i < all.size(); i++) {
 		const tile_t& other = all[i];
@@ -236,9 +244,9 @@ size_t find_below(const size_t id, const vector<tile_t>& all) {
 }
 
 size_t find_corner(const vector<tile_t>& all) {
-	for (size_t id = 0; id < all.size(); id++) {
-		if (find_above(id, all) == all.size() && find_left(id, all) == all.size()) {
-			return id;
+	for (size_t idx = 0; idx < all.size(); idx++) {
+		if (find_above(idx, all) == all.size() && find_left(idx, all) == all.size()) {
+			return idx;
 		}
 	}
 
@@ -246,35 +254,40 @@ size_t find_corner(const vector<tile_t>& all) {
 }
 
 vector<vector<tile_t>> arrange_tiles(const vector<tile_t> &tiles) {
-	// generate vector of all tile rotations and flips
+
+	// All tile orientations (rotations and flips) for all tiles
 	vector<tile_t> all;
 	for (const auto& tile : tiles) {
 		const auto tf = tile_transforms(tile);
 		all.insert(all.end(), tf.begin(), tf.end());
 	}
 
-	// 2D vector transformed tiles, arranged
+	// Start with top left (any corner that has nothing left or above)
+	// left_idx is the tile index in all that is the leftmost tile for the row
+	// Add the leftmost tile to the arranged matrix
+	//	then search for the tile that goes to the right of it
+	//	insert and iterate until we don't find a right tile.
+	// Look for the tile that goes below the leftmost tile
+	//	make it the new leftmost and repeat until we don't find any below tiles
 	vector<vector<tile_t>> arranged;
 
-	size_t id = find_corner(all);
-	while (id < all.size()) {
+	size_t left_idx = find_corner(all);
+	while (left_idx < all.size()) {
 		vector<tile_t> row;
 
-		tile_t& tile = all[id];
-		row.push_back(tile);
+		tile_t& left_tile = all[left_idx];
+		row.push_back(left_tile);
 		
-		size_t right = find_right(id, all);
-		while (right < all.size()) {
-			tile_t& right_tile = all[right];
+		size_t right_idx = find_right(left_idx, all);
+		while (right_idx < all.size()) {
+			tile_t& right_tile = all[right_idx];
 			row.push_back(right_tile);	
 
-			right = find_right(right, all);
+			right_idx = find_right(right_idx, all);
 		}
 
-		// print("\n");
-
 		arranged.push_back(row);
-		id = find_below(id, all);
+		left_idx = find_below(left_idx, all);
 	}
 
 	return arranged;
@@ -282,9 +295,9 @@ vector<vector<tile_t>> arrange_tiles(const vector<tile_t> &tiles) {
 
 /* Part 1 */
 result_t part1(const data_t& tiles) {	
-
 	const auto arranged = arrange_tiles(tiles);
 
+	/* Product of the four corner tile ids */
 	size_t size = arranged.size() - 1;
 	result_t result = arranged[0][0].id 
 					* arranged[size][0].id
