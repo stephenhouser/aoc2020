@@ -44,30 +44,30 @@ const string match_combine(const string& text, const string& re) {
 	return result;
 }
 
-size_t parse_edge(const string& text) {
-	size_t code = 0;
-	for (const char ch : text) {
-		code = code << 1;
-		code |= (ch == '#') ? 0x1 : 0x0;
-	}
-
-	return code;
-}
-
-size_t parse_edge_reverse(string text) {
-	reverse(text.begin(), text.end());
-	return parse_edge(text);
-}
-
-
-struct t_tile {
+struct tile_t {
 	size_t id = 0;
 	vector<string> data = {};
 
 	string _left = "";
 	string _right = "";
 
-	t_tile(size_t id, const vector<string>& data) : id(id), data(data) {
+	tile_t(const string& raw) {
+		const auto parts = split(raw, "\n");
+
+		const size_t id_start = parts[0].find(' ');
+		const size_t id_end = parts[0].find(':');
+		id = stoul(parts[0].substr(id_start, id_end-id_start));
+
+		data.insert(data.begin(), parts.begin()+1, parts.end());
+
+		update_edges();
+	}
+
+	tile_t(size_t id, const vector<string>& data) : id(id), data(data) {
+		update_edges();
+	}
+
+	void update_edges() {
 		for (const auto& row : data) {
 			_left += row[0];
 		}
@@ -109,7 +109,7 @@ struct t_tile {
 	}
 };
 
-t_tile rotate(const t_tile& tile) {
+tile_t rotate(const tile_t& tile) {
 	vector<string> rotated;
 	size_t dim = tile.data.size();
 
@@ -126,7 +126,7 @@ t_tile rotate(const t_tile& tile) {
 	return {tile.id, rotated};
 }
 
-t_tile flip(const t_tile& tile) {
+tile_t flip(const tile_t& tile) {
 	vector<string> flipped;
 
 	for (size_t y = tile.data.size(); y != 0; y--) {
@@ -136,9 +136,9 @@ t_tile flip(const t_tile& tile) {
 	return {tile.id, flipped};
 }
 
-vector<t_tile> tile_transforms(const t_tile& tile) {
-	t_tile work = tile;
-	vector<t_tile> tiles = {work, flip(work)};
+vector<tile_t> tile_transforms(const tile_t& tile) {
+	tile_t work = tile;
+	vector<tile_t> tiles = {work, flip(work)};
 
 	for (size_t i =0; i < 3; i++) {
 		work = rotate(work);
@@ -149,105 +149,13 @@ vector<t_tile> tile_transforms(const t_tile& tile) {
 	return tiles;
 }
 
-struct tile_t {
-	size_t id = 0;
-	vector<size_t> neighbors = {};
-	string tile_data = "";
-
-	string tile_map = "";
-
-	const unordered_set<size_t> get_edges() const {
-		unordered_set<size_t> edges;
-
-		const vector<string> edge_rxs = {
-			"^([\\.#]+)\n",		// top
-			"[\\.#]+([\\.#])",	// right
-			"([\\.#]+)\n+$", 	// bottom
-			"([\\.#])[\\.#]+",	// left
-		};
-	
-		for (const auto& rx : edge_rxs) {
-			const string edge_text = match_combine(tile_data, rx);
-			edges.insert(parse_edge(edge_text));
-			edges.insert(parse_edge_reverse(edge_text));
-		}
-	
-		return edges;
-	}
-
-	const string get_tile_map() const {
-		vector<string> rows;
-		smatch match;
-	
-		const regex rx("\n[\\\\.#]([\\\\.#]+)[\\\\.#]");
-		auto begin = sregex_iterator(tile_data.begin(), tile_data.end(), rx);
-		auto end = sregex_iterator();
-	
-		bool first_row = true;
-		for (auto it = begin; it != end; ++it) {
-			if (!first_row) {
-				rows.push_back((*it).str(1));
-			}
-	
-			first_row = false;
-		}
-	
-		// remove last line
-		rows.pop_back();
-	
-		string result = "";
-		for (const auto& row : rows) {
-			result.append(row);
-			result.append("\n");
-		}
-	
-		return result;
-	}
-
-	void print() const {
-		std::print("{}: ", this->id);
-		for (const auto &n : this->neighbors) {
-			std::print("{}, ", n);
-		}
-		// std::print("\n");
-		// std::print("{}", this->tile_data);
-	}
-};
-
-t_tile from_tile(const tile_t& tile) {
-	vector<string> data = split(tile.tile_data, "\n");
-	return {tile.id, data};	
-}
-
-
 /* Update with data type and result types */
-using data_t = unordered_map<size_t, tile_t>;
+using data_t = vector<tile_t>;
 using result_t = size_t;
 
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-/* Parse the raw text defineing a tile to a `tile_t` struct */
-const tile_t parse_tile(const string& raw_text) {
-	tile_t tile;
-
-	tile.id = stoul(match_combine(raw_text, "^Tile (\\d+):\n"));
-	tile.tile_data = raw_text.substr(raw_text.find_first_of("\n")+1);
-	return tile;
-}
-
-/* Return a map of all edges to their corresponding tiles */
-unordered_map<size_t, unordered_set<size_t>> get_edge_map(const data_t& tiles) {
-	unordered_map<size_t, unordered_set<size_t>> edges;
-
-	for (const auto& [id, tile] : tiles) {
-		for (const auto edge : tile.get_edges()) {
-			edges[edge].insert(tile.id);
-		}
-	}
-
-	return edges;
-}
 
 /* Read the data file... */
 const data_t read_data(const string& filename) {
@@ -259,8 +167,9 @@ const data_t read_data(const string& filename) {
 	string line;
 	while (getline(ifs, line)) {
 		if (line.empty()) {
-			tile_t tile = parse_tile(raw_tile);
-			tiles[tile.id] = tile;
+			const tile_t &tile = tile_t(raw_tile);
+			tiles.push_back(tile);
+
 			raw_tile.clear();
 		} else {
 			raw_tile.append(line);
@@ -268,54 +177,17 @@ const data_t read_data(const string& filename) {
 		}
 	}
 
-	tile_t tile = parse_tile(raw_tile);
-	tiles[tile.id] = tile;
-
-	// calculate neighbors based on edges
-	unordered_map<size_t, unordered_set<size_t>> neighbors_of;
-	auto edges = get_edge_map(tiles);
-
-	for (const auto& [edge, neighbor_set] : edges) {
-		assert(neighbor_set.size() <= 2);
-
-		if (neighbor_set.size() == 2) {
-			const vector<size_t> neighbors(neighbor_set.begin(), neighbor_set.end());
-			neighbors_of[neighbors[0]].insert(neighbors[1]);
-			neighbors_of[neighbors[1]].insert(neighbors[0]);
-		}
-	}
-
-	// add neighbors to tiles
-	for (auto& [id, tile] : tiles) {
-		// tile.neighbors = neighbors_of[tile.id];
-		vector<size_t> neighbors(neighbors_of[tile.id].begin(), neighbors_of[tile.id].end());
-		tile.neighbors = neighbors;
-	}
+	const tile_t &tile = tile_t(raw_tile);
+	tiles.push_back(tile);
 
 	return tiles;
 }
 
-size_t hashit(size_t x, size_t y) {
-	return (x & 0xFFFFul << 16) | (y & 0xFFFFul);
-}
-
-/* Part 1 */
-result_t part1(const data_t& tiles) {
-	auto corners = tiles 
-		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
-		| views::transform([](const auto& tile) { return tile.first; })
-		| views::common;
-		
-	size_t result = std::accumulate(corners.begin(), corners.end(), 1ul, multiplies());
-	return result;
-}
-
-
-size_t find_above(const size_t id, const vector<t_tile>& all) {
-	const t_tile &tile = all[id];
+size_t find_above(const size_t id, const vector<tile_t>& all) {
+	const tile_t &tile = all[id];
 
 	for (size_t i = 0; i < all.size(); i++) {
-		const t_tile& other = all[i];
+		const tile_t& other = all[i];
 		if (tile.id != other.id && tile.top() == other.bottom()) {
 			return i;
 		}
@@ -324,11 +196,11 @@ size_t find_above(const size_t id, const vector<t_tile>& all) {
 	return all.size();
 }
 
-size_t find_left(const size_t id, const vector<t_tile>& all) {
-	const t_tile &tile = all[id];
+size_t find_left(const size_t id, const vector<tile_t>& all) {
+	const tile_t &tile = all[id];
 
 	for (size_t i = 0; i < all.size(); i++) {
-		const t_tile& other = all[i];
+		const tile_t& other = all[i];
 		if (tile.id != other.id && tile.left() == other.right()) {
 			return i;
 		}
@@ -337,11 +209,11 @@ size_t find_left(const size_t id, const vector<t_tile>& all) {
 	return all.size();
 }
 
-size_t find_right(const size_t id, const vector<t_tile>& all) {
-	const t_tile &tile = all[id];
+size_t find_right(const size_t id, const vector<tile_t>& all) {
+	const tile_t &tile = all[id];
 
 	for (size_t i = 0; i < all.size(); i++) {
-		const t_tile& other = all[i];
+		const tile_t& other = all[i];
 		if (tile.id != other.id && tile.right() == other.left()) {
 			return i;
 		}
@@ -350,11 +222,11 @@ size_t find_right(const size_t id, const vector<t_tile>& all) {
 	return all.size();
 }
 
-size_t find_below(const size_t id, const vector<t_tile>& all) {
-	const t_tile &tile = all[id];
+size_t find_below(const size_t id, const vector<tile_t>& all) {
+	const tile_t &tile = all[id];
 
 	for (size_t i = 0; i < all.size(); i++) {
-		const t_tile& other = all[i];
+		const tile_t& other = all[i];
 		if (tile.id != other.id && tile.bottom() == other.top()) {
 			return i;
 		}
@@ -363,7 +235,7 @@ size_t find_below(const size_t id, const vector<t_tile>& all) {
 	return all.size();
 }
 
-size_t find_corner(const vector<t_tile>& all) {
+size_t find_corner(const vector<tile_t>& all) {
 	for (size_t id = 0; id < all.size(); id++) {
 		if (find_above(id, all) == all.size() && find_left(id, all) == all.size()) {
 			return id;
@@ -373,72 +245,64 @@ size_t find_corner(const vector<t_tile>& all) {
 	return all.size();
 }
 
-result_t part2(const data_t& tiles) {
-	auto corners = tiles 
-		| views::filter([](const auto& tile) { return tile.second.neighbors.size() == 2; })
-		| views::transform([](const auto& tile) { return tile.first; })
-		| ranges::to<vector<size_t>>();
-
-	// convert all tiles to t_tiles
-	vector<t_tile> t_tiles;
-	for (const auto& tile : tiles) {
-		t_tiles.push_back(from_tile(tile.second));
-	}
-
+vector<vector<tile_t>> arrange_tiles(const vector<tile_t> &tiles) {
 	// generate vector of all tile rotations and flips
-	vector<t_tile> all_tiles;
-	for (const auto& tile : t_tiles) {
+	vector<tile_t> all;
+	for (const auto& tile : tiles) {
 		const auto tf = tile_transforms(tile);
-		all_tiles.insert(all_tiles.end(), tf.begin(), tf.end());
+		all.insert(all.end(), tf.begin(), tf.end());
 	}
 
-	print("tiles={}, all_tiles={}", t_tiles.size(), all_tiles.size());
+	// 2D vector transformed tiles, arranged
+	vector<vector<tile_t>> arranged;
 
-	// for (const auto& tile : all_tiles) {
-	// 	tile.print();
-	// 	print("\n");
-	// }
+	size_t id = find_corner(all);
+	while (id < all.size()) {
+		vector<tile_t> row;
 
-	vector<vector<t_tile>> final;
-
-	size_t id = find_corner(all_tiles);
-	while (id < all_tiles.size()) {
-		vector<t_tile> row;
-
-		t_tile& tile = all_tiles[id];
+		tile_t& tile = all[id];
 		row.push_back(tile);
-		// print("{} ", tile.id);
 		
-		size_t right = find_right(id, all_tiles);
-		while (right < all_tiles.size()) {
-			t_tile& right_tile = all_tiles[right];
+		size_t right = find_right(id, all);
+		while (right < all.size()) {
+			tile_t& right_tile = all[right];
 			row.push_back(right_tile);	
-			// print("{} ", tile.id);
 
-			right = find_right(right, all_tiles);
+			right = find_right(right, all);
 		}
 
 		// print("\n");
 
-		final.push_back(row);
-		id = find_below(id, all_tiles);
+		arranged.push_back(row);
+		id = find_below(id, all);
 	}
 
-	print("\n");
-	for (const auto& t_tiles : final) {
-		for (const t_tile& tile : t_tiles) {
-			print("{} ", tile.id);
-		}
-		print("\n");
-	}
+	return arranged;
+}
 
-	size_t final_dim = final.size() - 1;
-	result_t result = final[0][0].id 
-					* final[final_dim][0].id
-					* final[0][final_dim].id
-					* final[final_dim][final_dim].id;
+/* Part 1 */
+result_t part1(const data_t& tiles) {	
+
+	const auto arranged = arrange_tiles(tiles);
+
+	size_t size = arranged.size() - 1;
+	result_t result = arranged[0][0].id 
+					* arranged[size][0].id
+					* arranged[0][size].id
+					* arranged[size][size].id;
+
+	return result;
+}
 
 
+result_t part2(const data_t& tiles) {
+	const auto arranged = arrange_tiles(tiles);
+
+	size_t size = arranged.size() - 1;
+	result_t result = arranged[0][0].id 
+					* arranged[size][0].id
+					* arranged[0][size].id
+					* arranged[size][size].id;
 
 	return result;
 }
