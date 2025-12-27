@@ -21,7 +21,7 @@
 | 17 | ⭐ | 🌟 | [Day 17: Conway Cubes](https://adventofcode.com/2020/day/17) |
 | 18 | ⭐ | 🌟 | [Day 18: Operation Order](<https://adventofcode.com/2020/day/18>) |
 | 19 | ⭐ | 🌟 | [Day 19: Monster Messages](<https://adventofcode.com/2020/day/19>) |
-| 20 | ⭐ |    | [Day 20: Jurassic Jigsaw](<https://adventofcode.com/2020/day/20>)  |
+| 20 | ⭐ | 🌟 | [Day 20: Jurassic Jigsaw](<https://adventofcode.com/2020/day/20>)  |
 | 21 |    |    |    |
 | 22 |    |    |    |
 | 23 |    |    |    |

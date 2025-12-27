@@ -8,41 +8,13 @@
 #include <numeric>	  // max, reduce, etc.
 #include <print>
 #include <ranges>  // ranges and views
-#include <regex>
+// #include <regex>
 #include <string>  // strings
-#include <unordered_map>
 #include <vector>  // collection
-#include <unordered_set>
 
-#include "mrf.h"	// map, reduce, filter templates
 #include "split.h"	// split strings
 
 using namespace std;
-
-/* Return the first match of regex in text */
-const string match_first(const string& text, const string& re) {
-	smatch match;
-	const regex rx(re);
-	if (regex_search(text, match, rx)) {
-		return match.str(1);
-	}
-
-	return "";
-}
-
-/* Return a string with all the matches of regex in text concatenated to a string. */
-const string match_combine(const string& text, const string& re) {
-	string result;
-	smatch match;
-
-	const regex rx(re, std::regex::ECMAScript);
-	for (sregex_iterator it = sregex_iterator(text.begin(), text.end(), rx); it != sregex_iterator(); it++) {
-		smatch match(*it);
-		result.append(match.str(1));
-	}
-
-	return result;
-}
 
 struct tile_t {
 	size_t id = 0;
@@ -101,12 +73,51 @@ struct tile_t {
 		return _right;
 	}
 
+	/* is data at x,y == ch */
+	bool is_char(const size_t x, const size_t y, const char ch) const {
+		return y < data.size() && x < data[y].size() && data[y][x] == ch;
+	}
+
+	/* set tile data at x, y to ch*/
+	void set_char(const size_t x, const size_t y, const char ch) {
+		if (y < data.size() && x < data[y].size()) {
+			data[y][x] = ch;
+		}
+	}
+
+	/* return the number of `needle` in the tile data */
+	size_t count_char(const char needle) const {
+		size_t char_count = 0;
+
+		for (const auto & row : data) {
+			for (const auto ch : row) {
+				if (ch == needle) {
+					char_count++;
+				}
+			}
+		}
+
+		return char_count;
+	}
+
 	void print() const {
 		std::print("{}:\n", this->id);
 		for (const auto &l : this->data) {
 			std::print("{}\n", l);
 		}
 	}
+
+	const string to_string() const {
+		string str;
+		str.reserve(data.size() * data.size());
+
+		for (const auto &row_str : data) {
+			str += row_str + "\n";
+		}
+		
+		return str;
+	}
+
 };
 
 /* Return a new tile (with the same id) rotated 90 degrees. */
@@ -253,6 +264,7 @@ size_t find_corner(const vector<tile_t>& all) {
 	return all.size();
 }
 
+/* Return a 2D vector of tiles arranged based on matching edges. */
 vector<vector<tile_t>> arrange_tiles(const vector<tile_t> &tiles) {
 
 	// All tile orientations (rotations and flips) for all tiles
@@ -307,17 +319,100 @@ result_t part1(const data_t& tiles) {
 	return result;
 }
 
+/* Return a tile representing the final arranged tile map, removing tile edges */
+const tile_t merge_tiles(const size_t id, const vector<vector<tile_t>> &tiles) {
+	vector<string> data;
+	const size_t tile_size = tiles[0][0].data.size();
 
+	// for each tile row
+	for (const auto& tile_row : tiles) {
+		// for each row in the output
+		for (size_t r = 1; r < tile_size - 1; r++) {
+			string row_data;
+			// for each tile in the row
+			for (const auto& tile : tile_row) {
+				row_data += tile.data[r].substr(1, tile_size - 2);
+			}
+
+			data.push_back(row_data);
+		}
+	}
+
+	return {id, data};
+}
+
+/* Vector representation of the sea monster we are looking for
+ * +--------------------+
+ * |                  # |
+ * |#    ##    ##    ###|
+ * | #  #  #  #  #  #   |
+ * +--------------------+
+*/
+const vector<vector<size_t>> monster = {
+	{ 18 },
+	{ 0, 5, 6, 11, 12, 17, 18, 19 },
+	{ 1, 4, 7, 10, 13, 16 }
+};
+const size_t monster_height = 3;
+const size_t monster_width = 19;
+
+/* Return true if we are able to erase a sea monster at (x, y) */
+bool erase_monster(tile_t& tile, size_t x, size_t y) {
+	for (size_t dy = 0; dy < monster.size(); dy++) {
+		for (const auto dx : monster[dy]) {
+			if (!tile.is_char(x+dx, y+dy, '#')) {
+				return false;
+			}
+		}
+	}
+
+	for (size_t dy = 0; dy < monster.size(); dy++) {
+		for (const auto dx : monster[dy]) {
+			tile.set_char(x+dx, y+dy, 'O');
+		}
+	}
+
+	return true;
+}
+
+/* Erase all sea monsters from tile and return number erased. */
+size_t erase_monsters(tile_t& tile) {
+	size_t size = tile.data.size();
+	size_t erased = 0;
+
+	/* No need to search where we won't find monsters
+	 * e.g. beyond the bounds of how big they are.
+	 */
+	for (size_t y = 0; y < size - monster_height; y++) {
+		for (size_t x = 0; x < size - monster_width; x++) {
+			if (erase_monster(tile, x, y)) {
+				erased++;
+			}
+		}
+	}
+
+	return erased;
+}
+
+/* Part 2 */
 result_t part2(const data_t& tiles) {
 	const auto arranged = arrange_tiles(tiles);
 
-	size_t size = arranged.size() - 1;
-	result_t result = arranged[0][0].id 
-					* arranged[size][0].id
-					* arranged[0][size].id
-					* arranged[size][size].id;
+	/* Merge the arranged tiles into one larger tile */
+	const tile_t merged = merge_tiles(0, arranged);
 
-	return result;
+	/* Iterate through all orientations of merged tile until we find one
+	 * that we can erase sea monsters from. 
+	 * Return the number of '#' chars left.
+	*/
+	for (tile_t &tile : tile_transforms(merged)) {
+		if (erase_monsters(tile) != 0) {
+			return tile.count_char('#');
+		}
+	}
+
+	/* Unable to find and erase any sea monsters */
+	return 0;
 }
 
 int main(int argc, char* argv[]) {
