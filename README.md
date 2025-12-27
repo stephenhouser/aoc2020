@@ -9,7 +9,7 @@
 | 5  | ⭐ | 🌟 | [Day 5: Binary Boarding](https://adventofcode.com/2020/day/5) |
 | 6  | ⭐ | 🌟 | [Day 6: Custom Customs](https://adventofcode.com/2020/day/6) |
 | 7  | ⭐ | 🌟 | [Day 7: Handy Haversacks](https://adventofcode.com/2020/day/7) |
-| 8  | ⭐ | 🌟 | [Day 8: Handheld Halting](https://adventofcode.com/2020/day/8)   |
+| 8  | ⭐ | 🌟 | [Day 8: Handheld Halting](https://adventofcode.com/2020/day/8) |
 | 9  | ⭐ | 🌟 | [Day 9: Encoding Error](https://adventofcode.com/2020/day/9) |
 | 10 | ⭐ | 🌟 | [Day 10: Adapter Array](https://adventofcode.com/2020/day/10) |
 | 11 | ⭐ | 🌟 | [Day 11: Seating System](https://adventofcode.com/2020/day/11) |
@@ -21,8 +21,8 @@
 | 17 | ⭐ | 🌟 | [Day 17: Conway Cubes](https://adventofcode.com/2020/day/17) |
 | 18 | ⭐ | 🌟 | [Day 18: Operation Order](<https://adventofcode.com/2020/day/18>) |
 | 19 | ⭐ | 🌟 | [Day 19: Monster Messages](<https://adventofcode.com/2020/day/19>) |
-| 20 | ⭐ | 🌟 | [Day 20: Jurassic Jigsaw](<https://adventofcode.com/2020/day/20>)  |
-| 21 |    |    |    |
+| 20 | ⭐ | 🌟 | [Day 20: Jurassic Jigsaw](<https://adventofcode.com/2020/day/20>) |
+| 21 |    |    | [Day 21: Allergen Assessment](<https://adventofcode.com/2020/day/21>) |
 | 22 |    |    |    |
 | 23 |    |    |    |
 | 24 |    |    |    |
