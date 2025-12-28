@@ -22,11 +22,11 @@
 | 18 | ⭐ | 🌟 | [Day 18: Operation Order](<https://adventofcode.com/2020/day/18>) |
 | 19 | ⭐ | 🌟 | [Day 19: Monster Messages](<https://adventofcode.com/2020/day/19>) |
 | 20 | ⭐ | 🌟 | [Day 20: Jurassic Jigsaw](<https://adventofcode.com/2020/day/20>) |
-| 21 |    |    | [Day 21: Allergen Assessment](<https://adventofcode.com/2020/day/21>) |
-| 22 |    |    |    |
-| 23 |    |    |    |
-| 24 |    |    |    |
-| 25 |    |    |    |
+| 21 | ⭐ | 🌟 | [Day 21: Allergen Assessment](<https://adventofcode.com/2020/day/21>) |
+| 22 | ⭐ | 🌟 | [Day 22: Crab Combat](<https://adventofcode.com/2020/day/22>) |
+| 23 |    |    | [Day 23: Crab Cups](https://adventofcode.com/2020/day/23) |
+| 24 |    |    | [Day 24: Lobby Layout](https://adventofcode.com/2020/day/24) |
+| 25 |    |    | [Day 25: Combo Breaker](https://adventofcode.com/2020/day/25) |
 
 Contains my solutions to the [Advent of Code 2020](https://adventofcode.com/2020).
 
@@ -41,7 +41,7 @@ Tools:
 
 There is a top level makefile that can be used to make each day or a `summary`
 
-- `make day5` will make day5 and test against the live `input.txt` in that directory.
+- `make day05` will make day05 and test against the live `input.txt` in that directory.
 - `make summary` will make all days and run against the `test.txt` and `input.txt` in each directory.
 
 When developing, within each day's directory.

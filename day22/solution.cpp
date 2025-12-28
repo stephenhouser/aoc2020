@@ -73,8 +73,8 @@ void play_round(deque<size_t>& p1, deque<size_t>& p2, bool recursive = false) {
 	bool p1_wins = c1 > c2;
 	if (recursive && p1.size() >= c1 && p2.size() >= c2) {
 		// recurse when enabled and there are enough cards in each deck
-		deque<size_t> r1(p1.begin(), p1.begin() + c1);
-		deque<size_t> r2(p2.begin(), p2.begin() + c2);
+		deque<size_t> r1(p1.begin(), p1.begin() + static_cast<long int>(c1));
+		deque<size_t> r2(p2.begin(), p2.begin() + static_cast<long int>(c2));
 		p1_wins = recursive_combat(r1, r2);
 	}
 
