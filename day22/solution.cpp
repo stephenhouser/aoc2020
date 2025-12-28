@@ -13,8 +13,6 @@
 #include <deque>
 #include <unordered_set>
 
-#include "mrf.h"	// map, reduce, filter templates
-#include "split.h"	// split strings
 
 using namespace std;
 
@@ -25,47 +23,30 @@ using result_t = size_t;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
+bool recursive_combat(deque<size_t>& p1, deque<size_t>& p2);
+
 /* Read the data file... */
 const data_t read_data(const string& filename) {
-	data_t data;
-
 	std::ifstream ifs(filename);
 
-	vector<size_t> cards;
+	data_t data;
+	vector<size_t> deck;
+
 	string line;
 	while (getline(ifs, line)) {
 		if (line.empty()) {
-			data.push_back(cards);
-			cards.clear();
+			data.push_back(deck);
+			deck.clear();
 		} else if (isdigit(line[0])) {
-			cards.push_back(stoul(line));
+			deck.push_back(stoul(line));
 		}
 	}
 
-	data.push_back(cards);
+	data.push_back(deck);
 	return data;
 }
 
-unordered_set<string> cache;
-
-void play_round(deque<size_t>& p1, deque<size_t>& p2) {
-	assert(!p1.empty() && !p2.empty());
-
-	size_t c1 = p1.front();
-	p1.pop_front();
-
-	size_t c2 = p2.front();
-	p2.pop_front();
-
-	if (c1 > c2) {
-		p1.push_back(c1);
-		p1.push_back(c2);
-	} else {
-		p2.push_back(c2);
-		p2.push_back(c1);
-	}
-}
-
+/* Return the score for the given deck as per the instructions. */
 result_t score_deck(deque<size_t> deck) {
 	result_t score = 0;
 
@@ -77,6 +58,46 @@ result_t score_deck(deque<size_t> deck) {
 	return score;
 }
 
+/* Play a round of combat, adjust the decks accordingly.
+ * Recurse to recursive_combat() if recursive combat is enabled to play a sub-game.
+ */
+void play_round(deque<size_t>& p1, deque<size_t>& p2, bool recursive = false) {
+	assert(!p1.empty() && !p2.empty());
+
+	size_t c1 = p1.front();
+	p1.pop_front();
+
+	size_t c2 = p2.front();
+	p2.pop_front();
+
+	bool p1_wins = c1 > c2;
+	if (recursive && p1.size() >= c1 && p2.size() >= c2) {
+		// recurse when enabled and there are enough cards in each deck
+		deque<size_t> r1(p1.begin(), p1.begin() + c1);
+		deque<size_t> r2(p2.begin(), p2.begin() + c2);
+		p1_wins = recursive_combat(r1, r2);
+	}
+
+	if (p1_wins) {
+		p1.push_back(c1);
+		p1.push_back(c2);
+	} else {
+		p2.push_back(c2);
+		p2.push_back(c1);
+	}
+}
+
+/* Return true if player 1 wins this game, false if player 2 wins.
+ * Update decks accordingly.
+ */
+bool combat(deque<size_t>& p1, deque<size_t>& p2) {
+	while (!p1.empty() && !p2.empty()) {
+		play_round(p1, p2);
+	}
+
+	return p2.empty();
+}
+
 /* Part 1 */
 result_t part1(const data_t& data) {
 	assert(data.size() == 2);
@@ -84,17 +105,56 @@ result_t part1(const data_t& data) {
 	deque<size_t> p1(data[0].begin(), data[0].end());
 	deque<size_t> p2(data[1].begin(), data[1].end());
 
-	while (!p1.empty() && !p2.empty()) {
-		play_round(p1, p2);
-	}
-
-	auto &winner = p1.size() > p2.size() ? p1 : p2;
-	print("{}\n", winner);
+	auto &winner = combat(p1, p2) ? p1 : p2;
 	return score_deck(winner);
 }
 
-result_t part2([[maybe_unused]] const data_t& data) {
-	return 0;
+/* Return a hash of the two decks suitable to cache maintenance. */
+size_t state_hash(const deque<size_t>& deck1, const deque<size_t>& deck2) {
+	size_t hash = deck1.size();
+
+	for(auto& i : deck1) {
+		hash ^= i + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	}
+
+	hash ^= deck2.size() + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+
+	for(auto& i : deck2) {
+		hash ^= i + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+	}
+
+	return hash;
+}
+
+/* Return true if player 1 wins this game, false if player 2 wins.
+ * Enable recursive combat, update decks accordingly, and player 1 wins
+ * if we encounter a repeated state (as in the instructions).
+ */
+bool recursive_combat(deque<size_t>& p1, deque<size_t>& p2) {
+	unordered_set<size_t> cache;
+
+	while (!p1.empty() && !p2.empty()) {
+		size_t state = state_hash(p1, p2);
+		if (cache.contains(state)) {
+			return true;	// player 1 wins when we repeat states
+		}
+
+		cache.insert(state);
+		play_round(p1, p2, true);
+	}
+
+	return p2.empty();
+}
+
+/* Part 2 */
+result_t part2(const data_t& data) {
+	assert(data.size() == 2);
+	
+	deque<size_t> p1(data[0].begin(), data[0].end());
+	deque<size_t> p2(data[1].begin(), data[1].end());
+
+	auto &winner = recursive_combat(p1, p2) ? p1 : p2;
+	return score_deck(winner);
 }
 
 int main(int argc, char* argv[]) {

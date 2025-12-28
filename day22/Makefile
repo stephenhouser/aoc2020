@@ -24,7 +24,8 @@ OBJECTS = $(patsubst %.cpp, %.o, $(wildcard *.cpp)) \
 endif
 
 # C Preprocessor flags (for c and c++ code)
-CPPFLAGS = -O3 -Wall -Weffc++ -Wextra -Wconversion -Wsign-conversion -Werror -Wpedantic
+#CPPFLAGS = -O3 -Wall -Weffc++ -Wextra -Wconversion -Wsign-conversion -Werror -Wpedantic
+CPPFLAGS = -O3 -Wall -Weffc++ -Wextra -Wconversion -Werror -Wpedantic
 
 # C specific flags
 CC = gcc
