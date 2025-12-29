@@ -73,7 +73,7 @@ result_t part1(const data_t& data) {
 
 	auto bus_id = (*shortest_wait).first;
 	auto wait_time = (*shortest_wait).second;
-	print("bus {} in {} minutes\n", bus_id, wait_time);
+	// print("bus {} in {} minutes\n", bus_id, wait_time);
 
 	return bus_id * wait_time;
 }

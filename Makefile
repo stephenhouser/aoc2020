@@ -26,6 +26,7 @@ default: all
 all: $(SUBDIRS)
 
 $(SUBDIRS):
+	@/usr/bin/echo -n $@:
 	@$(MAKE) -C $@ input
 
 # lint: $(SOURCES)
