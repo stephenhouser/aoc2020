@@ -10,18 +10,8 @@
 #include <ranges>  // ranges and views
 #include <string>  // strings
 #include <vector>  // collection
-#include <deque>
 
 using namespace std;
-
-struct node_t {
-	size_t label;
-	node_t *next;
-
-	node_t(size_t label, node_t * next) : label(label), next(next) {
-	}
-};
-
 
 /* Update with data type and result types */
 using data_t = vector<size_t>;
@@ -48,139 +38,17 @@ const data_t read_data(const string& filename) {
 	return data;
 }
 
-node_t *to_list(const vector<size_t> & cups) {
-	node_t * head = NULL;
-	node_t * tail = NULL;
-
-	for (const auto n : cups) {
-		node_t * node = new node_t(n, head);
-		if (head == NULL) {
-			head = node;
-		} else {
-			tail->next = node;
-		}
-
-		tail = node;
+/* Print the cups... */
+void print_cups(const vector<size_t>& cups, size_t current) {
+	print("({}) ", current);
+	for (size_t next = current; cups[next] != current; next = cups[next]) {
+		print("{} ", cups[next]);
 	}
-
-	return head;
 }
 
-void free_list(node_t * head) {
-	node_t * prev = head;
-	node_t * cur = prev->next;
-
-	while (cur != head) {
-		free(prev);
-		
-		prev = cur;
-		cur = cur->next;
-	}
-
-	free(prev);
-}
-
-result_t score_cups(const node_t * head) {
-	const node_t * first = head;
-	while (first->label != 1) {
-		first = first->next;
-	}
-
-	size_t result = 0;
-	for (const node_t * current = first->next; current != first; current = current->next) {
-		result = result * 10 + current->label;
-	}
-
-	return result;
-}
-
-void print_cups(const node_t * head) {
-	const node_t * current = head;
-	for (; current->next && current->next != head; current = current->next) {
-		print("{}, ", current->label);
-	}
-	print("{}", current->label);
-}
-
-node_t *pick(node_t * head, size_t to_pick = 3) {
-	node_t * picked = head->next;
-
-	node_t * current = head;
-	for (size_t n = 0; n < to_pick; n++) {
-		current = current->next;
-	}
-
-	head->next = current->next;
-	current->next = NULL;
-
-	return picked;
-}
-
-node_t * find_cup(node_t * head, size_t label) {
-	node_t * current = head;
-	for (; current->next && current->next != head; current = current->next) {
-		if (current->label == label) {
-			return current;
-		}
-	}
-
-	return current->label == label ? current : NULL;
-}
-
-node_t * find_destination(node_t * head, size_t label) {
-	node_t * dest = NULL;
-
-	do {
-		label = (label == 1) ? 9 : (label - 1);
-		dest = find_cup(head, label);
-	} while (dest == NULL);
-
-	return dest;
-}
-
-/* Splice list in after node */
-void splice(node_t * node, node_t * list) {
-	assert(node != NULL);
-	assert(list != NULL);
-
-	node_t * tail = node->next;
-	node->next = list;
-
-	while (list->next != NULL) {
-		list = list->next;
-	}
-
-	list->next = tail;
-}
-
-node_t *move_cups(node_t * start, size_t moves) {
-	node_t * current = start;
-
-	for (size_t m = 0; m < moves; m++) {
-		// print("\n-- move {} --\ncups: ", m+1);
-		// print_cups(current);
-
-		node_t * holding = pick(current);
-
-		// print("\npick: ");
-		// print_cups(holding);
-
-		node_t * destination = find_destination(current, current->label);
-
-		// print("\ndestination: {}\n", destination->label);
-
-		splice(destination, holding);		
-
-		// print("new: ");
-		// print_cups(current);
-		// print("\n");
-
-		current = current->next;
-	}
-
-	return current;
-}
-
+/* Return the destination cup, given the `current` cup.
+ * The next lowest value label or restart from the highest if none below.
+ */
 size_t find_destination(const vector<size_t> &cups, size_t current) {
 	size_t label = (current == 1 ? cups.size() : current) - 1;
 
@@ -194,101 +62,72 @@ size_t find_destination(const vector<size_t> &cups, size_t current) {
 	return label;
 }
 
-void print_it(const vector<size_t>& cups, size_t current) {
-	print("({}) ", current);
-	for (size_t next = current; cups[next] != current; next = cups[next]) {
-		print("{} ", cups[next]);
+/* Return the cup organization afeter `moves`. 
+ * Returns a vector of the first few cups excluding cup 1 (see below).
+ */
+vector<size_t> move_cups(const data_t& data, const size_t moves) {
+	// Create vector where label is index and value is location of next cup
+	vector<size_t> cups(data.size()+1);
+	for (size_t i = 0; i < data.size(); i++) {
+		cups[data[i]] = data[(i + 1) % data.size()];
 	}
 
-	// for (size_t i = 1; i < cups.size(); i++) {
-	// 	if (i == current) {
-	// 		print("({}) ", cups[i]);
-	// 	} else {
-	// 		print("{} ", cups[i]);
-	// 	}
-	// }
+	// start with the cup in the first position of original data
+	size_t current = data[0];
+
+	// move...
+	for (size_t m = 0; m < moves; m++) {
+		auto destination = find_destination(cups, current);
+		
+		// Remove next 3 cups from current position
+		auto splice_start = cups[current];
+		auto splice_end   = cups[cups[cups[current]]];
+		cups[current] = cups[splice_end];
+
+		// splice in after destination cup
+		cups[splice_end] = cups[destination];
+		cups[destination] = splice_start;
+
+		// advance to next cup
+		current = cups[current];
+	}
+
+	// return a vector of the first 10 cups, skipping cup 1 as we don't use
+	// it in calculating the answer
+	vector<size_t> result;
+	for (size_t i = 0, cup = cups[1]; i < 10 && cups[cup] != 1; i++, cup = cups[cup]) {
+		result.push_back(cup);
+	}
+	return result;
 }
 
-result_t score_it(const vector<size_t> &cups) {
-	result_t result = 0;
-	for (size_t c = cups[1]; c != 1; c = cups[c]) {
-		result = result * 10 + c;
+/* Part 1 */
+result_t part1(const data_t& data) {
+	// part 1, 100 moves
+	auto cups = move_cups(data, 100);
+
+	// result is the integer formed by the cup organization
+	// not including cup 1.
+	size_t result = 0;
+	for (const auto n : cups) {
+		result = result * 10 + n;
 	}
 
 	return result;
 }
 
-/* Part 1 */
-result_t part1(const data_t data) {
-
-	print("data: {}\n", data);
-
-	// vector where label is index and value is location of next cup
-	vector<size_t> cups(data.size()+1);
-	for (size_t i = 0; i < data.size(); i++) {
-		size_t label = data[i];
-		size_t next = data[(i + 1) % data.size()];
-		cups[label] = next;
-	}
-
-	print("cups: {}\n", cups);
-
-	size_t current = data[0];
-	for (size_t m = 0; m < 100; m++) {
-		print("-- move {} --\ncups: ", m+1);
-		print_it(cups, current);
-		print("\n");
-
-		auto destination = find_destination(cups, current);
-		
-		print("destination: {}\n", destination);
-
-		auto splice_start = cups[current];
-		auto splice_end   = cups[cups[cups[current]]];
-
-		// splice out next 3 from current position
-		cups[current] = cups[splice_end];
-
-		// add in at destination
-		cups[splice_end] = cups[destination];
-		cups[destination] = splice_start;
-
-		current = cups[current];
-	}
-
-	return score_it(cups);
-
-	// node_t *cups = to_list(data);
-
-	// cups = move_cups(cups, 100);
-
-	// result_t result = score_cups(cups);
-
-	// free_list(cups);
-	// return result;
-}
-
 result_t part2(const data_t data) {
-	return data.size();
-	// vector<size_t> vec(data.begin(), data.end());
-	// for (size_t n = 10; n <= 1000000; n++) {
-	// 	vec.push_back(n);
-	// }
+	// pad out the data to be 1 million cups...
+	data_t million_cups(data.begin(), data.end());
+	for (size_t n = 10; n <= 1000000; n++) {
+		million_cups.push_back(n);
+	}
 
-	// node_t *cups = to_list(vec);
+	// part 2, 10 million moves
+	auto cups = move_cups(million_cups, 10000000);
 
-	// // print_cups(cups);
-
-	// cups = move_cups(cups, 10000000);
-
-	// node_t * cup1 = find_cup(cups, 1);
-
-	// print("a1 = {}, a2 = {}\n", cup1->next->label, cup1->next->next->label);
-
-	// result_t result = cup1->next->label * cup1->next->next->label;
-
-	// free_list(cups);
-	// return result;
+	// result is the product of the two cups clockwise of cup 1.
+	return cups[0] * cups[1];
 }
 
 int main(int argc, char* argv[]) {
