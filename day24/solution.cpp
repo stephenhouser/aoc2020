@@ -23,7 +23,8 @@ using result_t = size_t;
 /* for pretty printing durations */
 using duration_t = chrono::duration<double, milli>;
 
-vector<point_t> parse_line(const string &line) {
+/* Return the direction on hexagonal grid to go based on hexagonal directions */
+vector<point_t> parse_directions(const string &line) {
 	vector<point_t> dirs;
 
 	size_t pos = 0;
@@ -75,16 +76,18 @@ const data_t read_data(const string& filename) {
 	string line;
 	while (getline(ifs, line)) {
 		if (!line.empty()) {
-			data.push_back(parse_line(line));
+			data.push_back(parse_directions(line));
 		}
 	}
 
 	return data;
 }
 
-/* Part 1 */
-result_t part1(const data_t& data) {
-	unordered_set<point_t> tiles;
+/* Return the set of active cells based on the hexagonal navigation
+ * directions given in `data`.
+ */
+unordered_set<point_t> build_active(const data_t & data) {
+	unordered_set<point_t> active;
 
 	for (const auto & dirs : data) {
 		point_t p {0, 0};
@@ -93,18 +96,99 @@ result_t part1(const data_t& data) {
 			p += dir;
 		}
 
-		if (tiles.contains(p)) {
-			tiles.erase(p);
+		if (active.contains(p)) {
+			active.erase(p);
 		} else {
-			tiles.insert(p);
+			active.insert(p);
 		}
 	}
 
-	return tiles.size();
+	return active;
 }
 
-result_t part2([[maybe_unused]] const data_t& data) {
-	return 0;
+/* Part 1 */
+result_t part1(const data_t& data) {
+	unordered_set<point_t> current = build_active(data);
+	return current.size();
+}
+
+/* Return the min/max bounds of the current cells. */
+pair<point_t, point_t> get_bounds(const unordered_set<point_t>& current) {
+	point_t p_min {*current.begin()};
+	point_t p_max {*current.begin()};
+
+	for (const auto & p : current) {
+		p_min.x = min(p_min.x, p.x);
+		p_min.y = min(p_min.y, p.y);
+
+		p_max.x = max(p_max.x, p.x);
+		p_max.y = max(p_max.y, p.y);
+	}
+
+	return {p_min, p_max};
+}
+
+/* Return the min/max bounds outset by given offset */
+pair<point_t, point_t> outset(const pair<point_t, point_t> & r, dimension_t offset) {
+	return {{r.first.x - offset, r.first.y - offset}, 
+			{r.second.x + offset, r.second.y + offset}};
+}
+
+/* Return the number of active neighbors based on hexagonal grid.
+ * There are 6 neighboring cells
+ */
+size_t neighbor_count(const unordered_set<point_t>& current, const point_t &p) {
+	vector<point_t> dirs = {{1, -1}, {-1, 1}, {0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+
+	size_t neighbors = 0;
+	for (const auto& d : dirs) {
+		if (current.contains(p + d)) {
+			neighbors += 1;
+		}
+	}
+
+	return neighbors;
+}
+
+/* Return the next iteration of the world, based on:
+ * - active tile with 1 or 2 neighbors persists to next iteration
+ * - inactive tile becomes active with exactly 2 neighbors
+ */
+unordered_set<point_t> step(const unordered_set<point_t> & current) {
+	// outset the bounds enough to account for hexagonal grid
+	auto [p_min, p_max] = outset(get_bounds(current), 2);
+
+	// generate next set of active cells
+	unordered_set<point_t> next;
+	for (auto y = p_min.y; y < p_max.y; y++) {
+		for (auto x = p_min.x; x < p_max.x; x++) {
+			const point_t p {x, y};
+			auto neighbors = neighbor_count(current, p);
+			auto is_active = current.contains(p);
+
+			if (is_active && (neighbors == 1 || neighbors == 2)) {
+				// is active and has 1 or 2 neighbors, persist
+				next.insert(p);
+			} else if (!is_active && neighbors == 2) {
+				// is inactive and has exactly 2 neighbors, become active
+				next.insert(p);
+			}
+		}
+	}
+
+	return next;
+}
+
+/* Part 2 */
+result_t part2(const data_t& data) {
+	unordered_set<point_t> current = build_active(data);
+
+	for (size_t day = 0; day < 100; day++) {
+		auto next = step(current);		
+		swap(next, current);
+	}
+
+	return current.size();
 }
 
 int main(int argc, char* argv[]) {

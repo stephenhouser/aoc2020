@@ -25,7 +25,7 @@
 | 21 | ⭐ | 🌟 | [Day 21: Allergen Assessment](<https://adventofcode.com/2020/day/21>) |
 | 22 | ⭐ | 🌟 | [Day 22: Crab Combat](<https://adventofcode.com/2020/day/22>) |
 | 23 | ⭐ | 🌟 | [Day 23: Crab Cups](https://adventofcode.com/2020/day/23) |
-| 24 |    |    | [Day 24: Lobby Layout](https://adventofcode.com/2020/day/24) |
+| 24 | ⭐ | 🌟 | [Day 24: Lobby Layout](https://adventofcode.com/2020/day/24) |
 | 25 |    |    | [Day 25: Combo Breaker](https://adventofcode.com/2020/day/25) |
 
 Contains my solutions to the [Advent of Code 2020](https://adventofcode.com/2020).
